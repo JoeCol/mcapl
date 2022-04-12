@@ -1,0 +1,6 @@
+env = responsibility.CleaningWorld
+
+mas.agent.1.file = /src/classes/responsibility/randomwalk.gwen
+mas.agent.1.builder = gwendolen.GwendolenAgentBuilder
+mas.agent.2.file = /src/classes/responsibility/randomwalk.gwen
+mas.agent.2.builder = gwendolen.GwendolenAgentBuilder

@@ -1,0 +1,11 @@
+GWENDOLEN
+
+:name: random_walker
+
+:Initial Beliefs:
+
+:Initial Goals:
+walk_forever [achieve]
+
+:Plans:
++!walk_forever [achieve]: {True} <- random_move(X);
