@@ -1,0 +1,14 @@
+GWENDOLEN
+
+:name: random_walker
+
+:Initial Beliefs:
+
+:Reasoning Rules:
+
+:Initial Goals:
+keep_clean [achieve]
+
+:Plans:
++!keep_clean [achieve] : {~B square_clean} <- clean;
++!keep_clean [achieve] : {B square_clean} <- patrol;

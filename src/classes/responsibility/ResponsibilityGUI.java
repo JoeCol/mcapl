@@ -93,10 +93,8 @@ public class ResponsibilityGUI {
 		
 		JLabel lblStatus = new JLabel("Status");
 		panel.add(lblStatus);
-		
-		JPanel pnlWorld = new JPanel();
-		frmResponsibilityGwen.getContentPane().add(pnlWorld, BorderLayout.CENTER);
-		pnlWorld.setLayout(new GridLayout(8, 8, 0, 0));
+		cwt = new CleaningWorldThread("/src/classes/responsibility/responsibility.ail");
+		frmResponsibilityGwen.getContentPane().add(cwt, BorderLayout.CENTER);
 		
 		btnNewButton.addActionListener(new ActionListener() 
 		{
@@ -104,10 +102,12 @@ public class ResponsibilityGUI {
 			{
 				if (!started)
 				{
-					cwt = new CleaningWorldThread("/src/classes/responsibility/responsibility.ail", pnlWorld);
+					//frmResponsibilityGwen.getContentPane().removeAll();
+					//cwt = new CleaningWorldThread("/src/classes/responsibility/responsibility.ail");
 					cwtThread = new Thread(cwt);
 					cwtThread.start();
 					started = true;
+					
 				}
 				else
 				{

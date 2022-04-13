@@ -73,7 +73,7 @@ public class SearchAndRescueMASEnv extends DefaultEnvironment {
 	 */
 	public Unifier executeAction(String agName, Action act) throws AILexception {
 		Unifier u = new Unifier();
-		
+		System.out.println(agName + ":Executes " + act.fullstring());
 		if (act.getFunctor().equals("move_to")) {
 			double x = ((NumberTerm) act.getTerm(0)).solve();
 			double y = ((NumberTerm) act.getTerm(1)).solve();
