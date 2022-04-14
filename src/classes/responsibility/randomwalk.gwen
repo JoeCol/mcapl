@@ -8,4 +8,5 @@ GWENDOLEN
 walk_forever [achieve]
 
 :Plans:
-+!walk_forever [achieve]: {True} <- random_move(X);
++!walk_forever [achieve]: {B at(X,Y)} <- random_move(X,Y);
++!walk_forever [achieve]: {True} <- print("I am lost");

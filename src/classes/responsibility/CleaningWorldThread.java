@@ -1,13 +1,18 @@
 package responsibility;
 
 import java.awt.GridLayout;
+import java.util.Iterator;
 import java.awt.Graphics;
+import java.awt.Color;
 
 import javax.swing.JPanel;
 
 import ail.mas.AIL;
 import ail.mas.AILEnv;
 import ail.mas.MAS;
+import ail.semantics.AILAgent;
+import ail.syntax.Literal;
+import ail.syntax.NumberTerm;
 import ail.syntax.ast.GroundPredSets;
 import ail.util.AILConfig;
 import ajpf.MCAPLcontroller;
@@ -100,6 +105,7 @@ public class CleaningWorldThread extends JPanel implements Runnable
 	{
 		super.paintComponent(g);
 		g.drawString(java.time.ZonedDateTime.now().toString(),5,g.getFontMetrics().getHeight() - 5);
+		g.setColor(Color.BLACK);
 		if (world != null)
 		{
 			int widthOfCell = getWidth() / world.getWidth();
@@ -111,7 +117,32 @@ public class CleaningWorldThread extends JPanel implements Runnable
 				{
 					g.drawRect(1+(x * widthOfCell), g.getFontMetrics().getHeight() + (y * heightOfCell), widthOfCell, heightOfCell);
 				}
-		}
+			}
+			
+			for (AILAgent ag : world.getAgents())
+			{
+				Iterator<Literal> lit = ag.getBB().getPercepts();
+				if (ag.getAgName().equals("first_agent"))
+				{
+					g.setColor(Color.BLUE);
+				}
+				else
+				{
+					g.setColor(Color.GREEN);
+				}
+				while (lit.hasNext())
+				{
+					Literal l = lit.next();
+					if (l.getFunctor().equalsIgnoreCase("at"))
+					{
+						int x = (int)((NumberTerm)l.getTerm(0)).solve();
+						int y = (int)((NumberTerm)l.getTerm(1)).solve();
+						int tx = 1+(x * widthOfCell);
+						int ty = g.getFontMetrics().getHeight() + (y * heightOfCell);
+						g.fillOval(tx, ty, widthOfCell, heightOfCell);
+					}
+				}
+			}
 		}
 	}
 
