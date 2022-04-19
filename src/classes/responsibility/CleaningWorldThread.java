@@ -4,6 +4,7 @@ import java.awt.GridLayout;
 import java.util.Iterator;
 import java.awt.Graphics;
 import java.awt.Color;
+import java.awt.Frame;
 
 import javax.swing.JPanel;
 
@@ -115,21 +116,28 @@ public class CleaningWorldThread extends JPanel implements Runnable
 			{
 				for (int y = 0; y < world.getHeight(); y++)
 				{
-					g.drawRect(1+(x * widthOfCell), g.getFontMetrics().getHeight() + (y * heightOfCell), widthOfCell, heightOfCell);
+					if (!world.getCell(x, y).hasDirt())
+					{
+						g.setColor(Color.lightGray);
+						g.fillRect(1+(x * widthOfCell), g.getFontMetrics().getHeight() + (y * heightOfCell), widthOfCell, heightOfCell);
+						g.setColor(Color.BLACK);
+					}
+					if (!world.getCell(x,y).isTraversable())
+					{
+						g.fillRect(1+(x * widthOfCell), g.getFontMetrics().getHeight() + (y * heightOfCell), widthOfCell, heightOfCell);
+					}
+					else
+					{
+						g.drawRect(1+(x * widthOfCell), g.getFontMetrics().getHeight() + (y * heightOfCell), widthOfCell, heightOfCell);
+						g.drawString("Zone:" + world.getCell(x, y).getZoneNumber(), 2+(x * widthOfCell), (g.getFontMetrics().getHeight() * 2) + (y * heightOfCell));
+					}
 				}
 			}
 			
 			for (AILAgent ag : world.getAgents())
 			{
 				Iterator<Literal> lit = ag.getBB().getPercepts();
-				if (ag.getAgName().equals("first_agent"))
-				{
-					g.setColor(Color.BLUE);
-				}
-				else
-				{
-					g.setColor(Color.GREEN);
-				}
+				
 				while (lit.hasNext())
 				{
 					Literal l = lit.next();
@@ -139,7 +147,10 @@ public class CleaningWorldThread extends JPanel implements Runnable
 						int y = (int)((NumberTerm)l.getTerm(1)).solve();
 						int tx = 1+(x * widthOfCell);
 						int ty = g.getFontMetrics().getHeight() + (y * heightOfCell);
+						g.setColor(world.getAgentColor(ag));
 						g.fillOval(tx, ty, widthOfCell, heightOfCell);
+						g.setColor(Color.BLACK);
+						g.drawString(ag.getAgName(), tx, ty + (heightOfCell / 2));
 					}
 				}
 			}
@@ -150,5 +161,9 @@ public class CleaningWorldThread extends JPanel implements Runnable
 	public void sendStop() 
 	{
 		mccontrol.stop();		
+	}
+
+	public Settings getSettings() {
+		return world.getSettings();
 	}
 }

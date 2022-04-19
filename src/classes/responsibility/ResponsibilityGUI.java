@@ -15,6 +15,13 @@ import javax.swing.border.BevelBorder;
 import ail.mas.AIL;
 
 import java.awt.event.ActionListener;
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileNotFoundException;
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.io.ObjectInputStream;
+import java.io.ObjectOutputStream;
 import java.awt.event.ActionEvent;
 import javax.swing.JLabel;
 import java.awt.GridLayout;
@@ -23,8 +30,9 @@ public class ResponsibilityGUI {
 
 	private JFrame frmResponsibilityGwen;
 	private Thread cwtThread;
-	private CleaningWorldThread cwt;
+	private CleaningWorldThread cwt = new CleaningWorldThread("/src/classes/responsibility/responsibility.ail");
 	private boolean started = false;
+	private File settingsFile = new File("cleaning.settings");
 
 	/**
 	 * Launch the application.
@@ -67,10 +75,48 @@ public class ResponsibilityGUI {
 		JMenu mnNewMenu = new JMenu("File");
 		menuBar.add(mnNewMenu);
 		
-		JMenuItem mntmNewMenuItem_1 = new JMenuItem("Load File");
-		mnNewMenu.add(mntmNewMenuItem_1);
-		
 		JMenuItem mntmNewMenuItem = new JMenuItem("Settings");
+		mntmNewMenuItem.addActionListener(new ActionListener() {
+			public void actionPerformed(ActionEvent e) {
+				Settings s = new Settings();
+				if (settingsFile.exists())
+				{
+					ObjectInputStream is;
+					try {
+						is = new ObjectInputStream(new FileInputStream(settingsFile));
+						s = (Settings)is.readObject();
+					} catch (FileNotFoundException ex) {
+						// TODO Auto-generated catch block
+						ex.printStackTrace();
+					} catch (IOException ex) {
+						// TODO Auto-generated catch block
+						ex.printStackTrace();
+					} catch (ClassNotFoundException ex) {
+						// TODO Auto-generated catch block
+						ex.printStackTrace();
+					}
+					
+				}
+				SettingsDialog sd = new SettingsDialog(s);
+				sd.setVisible(true);
+				System.out.println("Closed?");
+				if (sd.updateSettings)
+				{
+					ObjectOutputStream os;
+					try {
+						os = new ObjectOutputStream(new FileOutputStream(settingsFile));
+						os.writeObject(s);
+						os.close();
+					} catch (FileNotFoundException e1) {
+						// TODO Auto-generated catch block
+						e1.printStackTrace();
+					} catch (IOException e1) {
+						// TODO Auto-generated catch block
+						e1.printStackTrace();
+					}
+				}
+			}
+		});
 		mnNewMenu.add(mntmNewMenuItem);
 		
 		JMenu mnNewMenu_1 = new JMenu("Simulation");
@@ -93,7 +139,6 @@ public class ResponsibilityGUI {
 		
 		JLabel lblStatus = new JLabel("Status");
 		panel.add(lblStatus);
-		cwt = new CleaningWorldThread("/src/classes/responsibility/responsibility.ail");
 		frmResponsibilityGwen.getContentPane().add(cwt, BorderLayout.CENTER);
 		
 		btnNewButton.addActionListener(new ActionListener() 

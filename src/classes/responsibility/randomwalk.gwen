@@ -5,8 +5,9 @@ GWENDOLEN
 :Initial Beliefs:
 
 :Initial Goals:
+
 walk_forever [achieve]
 
 :Plans:
-+!walk_forever [achieve]: {B at(X,Y)} <- random_move(X,Y);
-+!walk_forever [achieve]: {True} <- print("I am lost");
++!walk_forever [achieve]: {~B zone(4), B at(X,Y)} <- random_move(X,Y);
++!walk_forever [achieve]: {B zone(4)} <- print("I have arrived"), +walk_forever;

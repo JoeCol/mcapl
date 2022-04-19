@@ -6,7 +6,8 @@ public class WorldCell
 {
 	private boolean hasDirt;
 	private boolean traversable;
-	private boolean occupied;
+	private boolean occupied = false;
+	private int zoneNumber;
 
 	public boolean hasDirt() 
 	{
@@ -31,12 +32,20 @@ public class WorldCell
 	}
 
 	public boolean isOccupied() {
-		return traversable || occupied;
+		return !traversable || occupied;
 	}
 
-	public WorldCell(boolean traversable) {
+	public WorldCell() 
+	{
 		super();
-		this.traversable = traversable;
+		traversable = false;
+		zoneNumber = 0;
+	}
+	
+	public WorldCell(int zone)
+	{
+		zoneNumber = zone;
+		traversable = zone != 0;
 	}
 
 	public void setOccupied(boolean occupied) {
@@ -45,5 +54,9 @@ public class WorldCell
 
 	public boolean isTraversable() {
 		return traversable;
+	}
+
+	public int getZoneNumber() {
+		return zoneNumber;
 	}
 }

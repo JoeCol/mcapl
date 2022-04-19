@@ -1,0 +1,19 @@
+GWENDOLEN
+
+:name: Cleaner
+
+:Initial Beliefs:
+
+:Initial Goals:
+patrol [achieve]
+
+:Plans:
+
++!goToZone(X) [achieve]: {~B zone(X)} <- go_to_zone(X);
++!goToZone(X) [achieve]: {B zone(X)} <- +!clean[achieve](X), +goToZone;
+
++!clean(X) [achieve]: {~B cleaned} <- do_clean(X);
++!clean(X) [achieve]: {B cleaned} <- +clean, +patrol, -cleanRequest(X);
+
++!patrol [achieve]: {~B cleanRequest(Z), B at(X,Y)} <- random_move(X, Y), checkForRequest;
++!patrol [achieve]: {B cleanRequest(X)} <- +!goToZone(X)[achieve], +patrol;

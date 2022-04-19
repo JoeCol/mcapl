@@ -1,37 +1,51 @@
 package responsibility;
 
-import java.util.HashMap;
+import java.io.Serializable;
 
-public class Settings
+public class Settings implements Serializable
 {
-	HashMap<String,String> settingsList = new HashMap<String, String>();
+	private static final long serialVersionUID = -4836286726986083154L;
 	String worldFileLocation;
-	int numberOfAgents;
 	int heightOfMap;
 	int widthOfMap;
 	int dirtAppearanceChange;
 	
 	public Settings()
 	{
-		numberOfAgents = 1;
 		heightOfMap = 10;
 		widthOfMap = 10;
 		dirtAppearanceChange = 6;
-		
+	}
+	
+	public String getWorldFileLocation() {
+		return worldFileLocation;
 	}
 
-	public int getWidth() 
-	{
-		return widthOfMap;
+	public void setWorldFileLocation(String worldFileLocation) {
+		this.worldFileLocation = worldFileLocation;
 	}
 
-	public int getHeight() 
-	{
+	public int getHeightOfMap() {
 		return heightOfMap;
 	}
 
-	public int getChangeOfDirt() 
-	{
+	public void setHeightOfMap(int heightOfMap) {
+		this.heightOfMap = heightOfMap;
+	}
+
+	public int getWidthOfMap() {
+		return widthOfMap;
+	}
+
+	public void setWidthOfMap(int widthOfMap) {
+		this.widthOfMap = widthOfMap;
+	}
+
+	public int getDirtAppearanceChange() {
 		return dirtAppearanceChange;
+	}
+
+	public void setDirtAppearanceChange(int dirtAppearanceChange) {
+		this.dirtAppearanceChange = dirtAppearanceChange;
 	}
 }

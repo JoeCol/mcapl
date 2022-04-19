@@ -1,5 +1,13 @@
 package responsibility;
 
+import java.awt.Color;
+import java.io.BufferedReader;
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileNotFoundException;
+import java.io.FileReader;
+import java.io.IOException;
+import java.io.ObjectInputStream;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Iterator;
@@ -27,11 +35,12 @@ interface UpdateToWorld{
 
 public class CleaningWorld extends DefaultEnvironment implements MCAPLJobber
 {
-	Settings currentSettings = new Settings();
+	Settings currentSettings;
+	File settingsFile = new File("cleaning.settings");
 	WorldCell[][] world;
 	RoundRobinScheduler rrs = new RoundRobinScheduler();
 	ArrayList<UpdateToWorld> listeners = new ArrayList<UpdateToWorld>();
-	HashMap<String, Pair<Integer, Integer>> agentLocations = new HashMap<String, Pair<Integer, Integer>>();
+	HashMap<String, Color> agentColours = new HashMap<String, Color>();
 	
 	Random r = new Random();
 	
@@ -40,10 +49,26 @@ public class CleaningWorld extends DefaultEnvironment implements MCAPLJobber
 		listeners.add(u);
 	}
 	
-	//TODO implement settings 
 	public void loadSettings()
 	{
-		
+		if (settingsFile.exists())
+		{
+			ObjectInputStream is;
+			try {
+				is = new ObjectInputStream(new FileInputStream(settingsFile));
+				currentSettings = (Settings)is.readObject();
+			} catch (FileNotFoundException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			} catch (IOException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			} catch (ClassNotFoundException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			}
+			
+		}
 	}
 	
 	public Settings getSettings()
@@ -55,46 +80,131 @@ public class CleaningWorld extends DefaultEnvironment implements MCAPLJobber
 	public void init_after_adding_agents() 
 	{
 		//Randomly position agents
-		int x = 0;
+		int x = 1;
 		for (AILAgent a : getAgents())
 		{
 			ArrayList<Term> terms = new ArrayList<Term>();
 			terms.add(new NumberTermImpl(x++));
-			terms.add(new NumberTermImpl(0));
+			terms.add(new NumberTermImpl(1));
 			Predicate p = new Predicate("at");
 			p.setTerms(terms);
 			addPercept(a.getAgName(), p);
-			agentLocations.put(a.getAgName(), new Pair<Integer,Integer>(x - 1, 0));
+			
+			ArrayList<Term> term = new ArrayList<Term>();
+			term.add(new NumberTermImpl(1));
+			Predicate p1 = new Predicate("zone");
+			p1.setTerms(term);
+			addPercept(a.getAgName(), p1);
+			
+			agentColours.put(a.getAgName(), new Color(r.nextInt(0xFFFFFF)));
 		}
 		
 	}
 
 	public CleaningWorld()
 	{
-		world = new WorldCell[currentSettings.getWidth()][currentSettings.getHeight()];
-		for (int x = 0; x < world.length; x++)
+		try
 		{
-			for (int y = 0; y < world[x].length; y++)
+			loadSettings();
+			world = new WorldCell[currentSettings.getHeightOfMap()][currentSettings.getWidthOfMap()];
+			BufferedReader br = new BufferedReader(new FileReader(currentSettings.getWorldFileLocation()));
+			String line = br.readLine();
+			for (int x = 0; x < world.length; x++)
 			{
-				world[x][y] = new WorldCell(true);
+				for (int y = 0; y < world[x].length; y++)
+				{
+					String lineChar = line.substring(y,y+1);
+					int zoneNum = Integer.parseInt(lineChar);
+					world[x][y] = new WorldCell(zoneNum);
+				}
+				line = br.readLine();
 			}
+			setup_scheduler(this, rrs);
+			rrs.addJobber(this);
 		}
-		loadSettings();
-		setup_scheduler(this, rrs);
-		rrs.addJobber(this);
+		catch (Exception ex)
+		{
+			ex.printStackTrace();
+		}
 	}
 	
 	public Unifier executeAction(String agName, Action act) throws AILexception {
 	   	Unifier theta = new Unifier();
 	   	System.out.println(agName + ": executes:" + act.fullstring());
 	   	
-	   	if (act.getFunctor().equals("random_move"))
+	   	switch (act.getFunctor())
 	   	{
-	   		randomlyMoveAgent(agName, (int)((NumberTerm)act.getTerm(0)).solve(), (int)((NumberTerm)act.getTerm(1)).solve());
+	   		case "random_move":
+	   			randomlyMoveAgent(agName, (int)((NumberTerm)act.getTerm(0)).solve(), (int)((NumberTerm)act.getTerm(1)).solve());
+	   			break;
+	   		case "clean":
+	   			clean(agName);
+	   			break;
+	   		case "goToZone":
+	   			goToZone(agName, (int)((NumberTerm)act.getTerm(0)).solve());
+	   			break;
+	   		case "checkForRequest":
+	   			checkForRequest(agName);
+	   			break;
+	   		default:
+	   			System.out.println(act.getFunctor() + " has not been implemented");
 	   	}
 	   	super.executeAction(agName, act);
     	return theta;
     }
+
+	private void checkForRequest(String agName) 
+	{
+		Predicate p = new Predicate("cleanRequest");
+		p.addTerm(new NumberTermImpl(r.nextInt(5) + 1));
+		addPercept(agName, p);		
+	}
+
+	private void goToZone(String agName, int zone) 
+	{
+		// TODO Auto-generated method stub
+		ArrayList<Term> terms = new ArrayList<Term>();
+		terms.add(new NumberTermImpl(x));
+		terms.add(new NumberTermImpl(y));
+		Predicate p = new Predicate("at");
+		p.setTerms(terms);
+		int newx = x;
+		int newy = y;
+		
+		int addToX = (r.nextInt(3)) - 1;
+		int addToY = (r.nextInt(3)) - 1;
+		newx = Math.floorMod(x + addToX, getWidth());
+		newy = Math.floorMod(y + addToY, getHeight());
+		boolean occupied = getCell(newx, newy).isOccupied();
+		if (occupied)
+		{
+			newx = x;
+			newy = y;
+		}
+		removePercept(agName, p);
+		getCell(x, y).setOccupied(false);
+		terms.clear();
+		terms.add(new NumberTermImpl(newx));
+		terms.add(new NumberTermImpl(newy));
+		addPercept(agName, p);
+		getCell(newx, newy).setOccupied(true);
+		
+		ArrayList<Term> zoneTerms = new ArrayList<Term>();
+		zoneTerms.add(new NumberTermImpl(getCell(x,y).getZoneNumber()));
+		Predicate p1 = new Predicate("zone");
+		p1.setTerms(zoneTerms);
+		removePercept(agName, p1);
+		
+		zoneTerms.clear();
+		zoneTerms.add(new NumberTermImpl(getCell(newx, newy).getZoneNumber()));
+		p1.setTerms(zoneTerms);
+		addPercept(agName, p1);
+	}
+
+	private void clean(String agName) 
+	{
+		// TODO Auto-generated method stub
+	}
 
 	private void randomlyMoveAgent(String agName, int x, int y) 
 	{
@@ -105,32 +215,36 @@ public class CleaningWorld extends DefaultEnvironment implements MCAPLJobber
 		p.setTerms(terms);
 		int newx = x;
 		int newy = y;
-		boolean occupied = true;
-		int trys = 0;
-		while (occupied && trys < 4)
+		
+		int addToX = (r.nextInt(3)) - 1;
+		int addToY = (r.nextInt(3)) - 1;
+		newx = Math.floorMod(x + addToX, getWidth());
+		newy = Math.floorMod(y + addToY, getHeight());
+		boolean occupied = getCell(newx, newy).isOccupied();
+		if (occupied)
 		{
-			newx = Math.floorMod(x + (r.nextInt(2) - 1),getWidth());
-			newy = Math.floorMod(y + (r.nextInt(2) - 1),getHeight());
-			for (AILAgent a : getAgents())
-			{
-				if ((a.getAgName() != agName) && !(agentLocations.get(a.getAgName())._1 == newx && agentLocations.get(a.getAgName())._2 == newy))
-				{
-					occupied = false;
-				}
-			}
-			trys++;
-			if (trys >= 4)
-			{
-				newx = x;
-				newy = y;
-			}
+			newx = x;
+			newy = y;
 		}
 		removePercept(agName, p);
+		getCell(x, y).setOccupied(false);
 		terms.clear();
 		terms.add(new NumberTermImpl(newx));
 		terms.add(new NumberTermImpl(newy));
 		addPercept(agName, p);
-		agentLocations.put(agName, new Pair<Integer,Integer>(x, y));
+		getCell(newx, newy).setOccupied(true);
+		
+		ArrayList<Term> zoneTerms = new ArrayList<Term>();
+		zoneTerms.add(new NumberTermImpl(getCell(x,y).getZoneNumber()));
+		Predicate p1 = new Predicate("zone");
+		p1.setTerms(zoneTerms);
+		removePercept(agName, p1);
+		
+		zoneTerms.clear();
+		zoneTerms.add(new NumberTermImpl(getCell(newx, newy).getZoneNumber()));
+		p1.setTerms(zoneTerms);
+		addPercept(agName, p1);
+		
 	}
 
 	@Override
@@ -146,7 +260,7 @@ public class CleaningWorld extends DefaultEnvironment implements MCAPLJobber
 		{
 			for (int y = 0; y < world[x].length; y++)
 			{
-				world[x][y].setChangeOfDirt(currentSettings.getChangeOfDirt());
+				world[x][y].setChangeOfDirt(currentSettings.getDirtAppearanceChange());
 			}
 		}
 		for (UpdateToWorld u : listeners)
@@ -169,11 +283,21 @@ public class CleaningWorld extends DefaultEnvironment implements MCAPLJobber
 
 	public int getHeight() 
 	{
-		return currentSettings.getHeight();
+		return currentSettings.getHeightOfMap();
 	}
 
 	public int getWidth() 
 	{
-		return currentSettings.getWidth();
+		return currentSettings.getWidthOfMap();
+	}
+
+	public WorldCell getCell(int x, int y) 
+	{
+		return world[y][x];
+	}
+
+	public Color getAgentColor(AILAgent ag) 
+	{
+		return agentColours.get(ag.getAgName());
 	}
 }
