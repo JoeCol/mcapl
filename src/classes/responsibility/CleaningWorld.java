@@ -11,8 +11,8 @@ import java.io.ObjectInputStream;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Iterator;
-import java.util.List;
 import java.util.Random;
+import java.util.Set;
 
 import ail.mas.DefaultEnvironment;
 import ail.mas.scheduling.RoundRobinScheduler;
@@ -26,7 +26,6 @@ import ail.syntax.Term;
 import ail.syntax.Unifier;
 import ail.util.AILexception;
 import ajpf.MCAPLJobber;
-import ajpf.psl.MCAPLPredicate;
 import gov.nasa.jpf.util.Pair;
 
 interface UpdateToWorld{
@@ -35,12 +34,17 @@ interface UpdateToWorld{
 
 public class CleaningWorld extends DefaultEnvironment implements MCAPLJobber
 {
+	enum CleaningStatus {cs_notcleaning, cs_gotostart, cs_cleanright, cs_cleanleft, cs_moveright, cs_movedown, cs_moveleft};
+	
 	Settings currentSettings;
 	File settingsFile = new File("cleaning.settings");
+	Routes routeToZones;
 	WorldCell[][] world;
 	RoundRobinScheduler rrs = new RoundRobinScheduler();
 	ArrayList<UpdateToWorld> listeners = new ArrayList<UpdateToWorld>();
 	HashMap<String, Color> agentColours = new HashMap<String, Color>();
+	HashMap<Integer, Pair<Integer, Integer>> zoneStart = new HashMap<Integer, Pair<Integer, Integer>>();
+	HashMap<String, CleaningStatus> agentCleaningStatus = new HashMap<String, CleaningStatus>();
 	
 	Random r = new Random();
 	
@@ -97,6 +101,7 @@ public class CleaningWorld extends DefaultEnvironment implements MCAPLJobber
 			addPercept(a.getAgName(), p1);
 			
 			agentColours.put(a.getAgName(), new Color(r.nextInt(0xFFFFFF)));
+			agentCleaningStatus.put(a.getAgName(), CleaningStatus.cs_notcleaning);
 		}
 		
 	}
@@ -106,19 +111,23 @@ public class CleaningWorld extends DefaultEnvironment implements MCAPLJobber
 		try
 		{
 			loadSettings();
+			zoneStart.clear();
 			world = new WorldCell[currentSettings.getHeightOfMap()][currentSettings.getWidthOfMap()];
 			BufferedReader br = new BufferedReader(new FileReader(currentSettings.getWorldFileLocation()));
 			String line = br.readLine();
-			for (int x = 0; x < world.length; x++)
+			for (int y = 0; y < world.length; y++)
 			{
-				for (int y = 0; y < world[x].length; y++)
+				for (int x = 0; x < world[0].length; x++)
 				{
-					String lineChar = line.substring(y,y+1);
+					String lineChar = line.substring(x,x+1);
 					int zoneNum = Integer.parseInt(lineChar);
-					world[x][y] = new WorldCell(zoneNum);
+					zoneStart.putIfAbsent(zoneNum, new Pair<Integer, Integer>(x,y));
+					world[y][x] = new WorldCell(zoneNum);
 				}
 				line = br.readLine();
 			}
+			zoneStart.remove(0);//Remove wall zone
+			routeToZones = new Routes(world,zoneStart);
 			setup_scheduler(this, rrs);
 			rrs.addJobber(this);
 		}
@@ -137,11 +146,11 @@ public class CleaningWorld extends DefaultEnvironment implements MCAPLJobber
 	   		case "random_move":
 	   			randomlyMoveAgent(agName, (int)((NumberTerm)act.getTerm(0)).solve(), (int)((NumberTerm)act.getTerm(1)).solve());
 	   			break;
-	   		case "clean":
-	   			clean(agName);
+	   		case "do_clean":
+	   			clean(agName, (int)((NumberTerm)act.getTerm(0)).solve(), (int)((NumberTerm)act.getTerm(1)).solve(), (int)((NumberTerm)act.getTerm(2)).solve());
 	   			break;
-	   		case "goToZone":
-	   			goToZone(agName, (int)((NumberTerm)act.getTerm(0)).solve());
+	   		case "go_to_zone":
+	   			goToZone(agName, (int)((NumberTerm)act.getTerm(0)).solve(), (int)((NumberTerm)act.getTerm(1)).solve(), (int)((NumberTerm)act.getTerm(2)).solve());
 	   			break;
 	   		case "checkForRequest":
 	   			checkForRequest(agName);
@@ -160,59 +169,104 @@ public class CleaningWorld extends DefaultEnvironment implements MCAPLJobber
 		addPercept(agName, p);		
 	}
 
-	private void goToZone(String agName, int zone) 
+	private void goToZone(String agName, int zone, int x, int y) 
 	{
-		// TODO Auto-generated method stub
-		ArrayList<Term> terms = new ArrayList<Term>();
-		terms.add(new NumberTermImpl(x));
-		terms.add(new NumberTermImpl(y));
-		Predicate p = new Predicate("at");
-		p.setTerms(terms);
-		int newx = x;
-		int newy = y;
+		int newx = routeToZones.toZone(zone, x, y)._1;
+		int newy = routeToZones.toZone(zone, x, y)._2;
 		
-		int addToX = (r.nextInt(3)) - 1;
-		int addToY = (r.nextInt(3)) - 1;
-		newx = Math.floorMod(x + addToX, getWidth());
-		newy = Math.floorMod(y + addToY, getHeight());
-		boolean occupied = getCell(newx, newy).isOccupied();
-		if (occupied)
-		{
-			newx = x;
-			newy = y;
-		}
-		removePercept(agName, p);
-		getCell(x, y).setOccupied(false);
-		terms.clear();
-		terms.add(new NumberTermImpl(newx));
-		terms.add(new NumberTermImpl(newy));
-		addPercept(agName, p);
-		getCell(newx, newy).setOccupied(true);
-		
-		ArrayList<Term> zoneTerms = new ArrayList<Term>();
-		zoneTerms.add(new NumberTermImpl(getCell(x,y).getZoneNumber()));
-		Predicate p1 = new Predicate("zone");
-		p1.setTerms(zoneTerms);
-		removePercept(agName, p1);
-		
-		zoneTerms.clear();
-		zoneTerms.add(new NumberTermImpl(getCell(newx, newy).getZoneNumber()));
-		p1.setTerms(zoneTerms);
-		addPercept(agName, p1);
+		moveAgent(agName, x, y, newx, newy);
 	}
 
-	private void clean(String agName) 
+	private void clean(String agName, int zone, int x, int y) 
 	{
-		// TODO Auto-generated method stub
+		switch (agentCleaningStatus.get(agName))
+		{
+		case cs_cleanright:
+			getCell(x,y).clean();
+			if (getCell(x+1,y).getZoneNumber() != zone)
+			{
+				if (getCell(x,y+1).getZoneNumber() != zone)
+				{
+					//Finished cleaning
+					agentCleaningStatus.put(agName, CleaningStatus.cs_notcleaning);
+					Predicate p = new Predicate("cleaned");
+					p.addTerm(new NumberTermImpl(zone));
+					addPercept(agName, p);	
+				}
+				else
+				{
+					agentCleaningStatus.put(agName, CleaningStatus.cs_movedown);
+				}
+			}
+			else
+			{
+				agentCleaningStatus.put(agName, CleaningStatus.cs_moveright);
+			}
+			break;
+		case cs_gotostart:
+			Pair<Integer, Integer> zoneLocation = zoneStart.get(zone);
+			if (zoneLocation._1 == x && zoneLocation._2 == y)
+			{
+				agentCleaningStatus.put(agName, CleaningStatus.cs_cleanright);
+			}
+			else
+			{
+				zoneLocation = routeToZones.toZone(zone, x, y);
+				moveAgent(agName, x, y, zoneLocation._1, zoneLocation._2);
+			}
+			break;
+		case cs_notcleaning:
+			agentCleaningStatus.put(agName, CleaningStatus.cs_gotostart);
+			break;
+		case cs_cleanleft:
+			getCell(x,y).clean();
+			if (getCell(x-1,y).getZoneNumber() != zone)
+			{
+				if (getCell(x,y+1).getZoneNumber() != zone)
+				{
+					agentCleaningStatus.put(agName, CleaningStatus.cs_notcleaning);
+					//Finished cleaning
+					Predicate p = new Predicate("cleaned");
+					p.addTerm(new NumberTermImpl(zone));
+					addPercept(agName, p);	
+				}
+				else
+				{
+					agentCleaningStatus.put(agName, CleaningStatus.cs_movedown);
+				}
+			}
+			else
+			{
+				agentCleaningStatus.put(agName, CleaningStatus.cs_moveleft);
+			}
+			break;
+		case cs_moveleft:
+			moveAgent(agName, x, y, x-1, y);
+			agentCleaningStatus.put(agName, CleaningStatus.cs_cleanleft);
+			break;
+		case cs_movedown:
+			moveAgent(agName, x, y, x, y+1);
+			if (getCell(x-1,y+1).getZoneNumber() != zone)
+			{
+				agentCleaningStatus.put(agName, CleaningStatus.cs_cleanright);
+			}
+			else
+			{
+				agentCleaningStatus.put(agName, CleaningStatus.cs_cleanleft);
+			}
+			break;
+		case cs_moveright:
+			moveAgent(agName, x, y, x+1, y);
+			agentCleaningStatus.put(agName, CleaningStatus.cs_cleanright);
+			break;
+		default:
+			System.out.println("Issue with cleaning status");
+			break;
+		}
 	}
 
 	private void randomlyMoveAgent(String agName, int x, int y) 
 	{
-		ArrayList<Term> terms = new ArrayList<Term>();
-		terms.add(new NumberTermImpl(x));
-		terms.add(new NumberTermImpl(y));
-		Predicate p = new Predicate("at");
-		p.setTerms(terms);
 		int newx = x;
 		int newy = y;
 		
@@ -220,30 +274,45 @@ public class CleaningWorld extends DefaultEnvironment implements MCAPLJobber
 		int addToY = (r.nextInt(3)) - 1;
 		newx = Math.floorMod(x + addToX, getWidth());
 		newy = Math.floorMod(y + addToY, getHeight());
-		boolean occupied = getCell(newx, newy).isOccupied();
-		if (occupied)
+		moveAgent(agName, x, y, newx, newy);
+		
+	}
+	
+	private void moveAgent(String agName, int x, int y, int newX, int newY)
+	{
+		
+		boolean occupied = getCell(newX, newY).isOccupied();
+		if (!occupied)
 		{
-			newx = x;
-			newy = y;
+			//Remove old at belief
+			ArrayList<Term> terms = new ArrayList<Term>();
+			terms.add(new NumberTermImpl(x));
+			terms.add(new NumberTermImpl(y));
+			Predicate p = new Predicate("at");
+			p.setTerms(terms);
+			removePercept(agName, p);
+			getCell(x, y).setOccupied(false);
+			
+			//Set New at belief
+			terms.clear();
+			terms.add(new NumberTermImpl(newX));
+			terms.add(new NumberTermImpl(newY));
+			addPercept(agName, p);
+			getCell(newX, newY).setOccupied(true);
+			
+			//Update zone belief
+			ArrayList<Term> zoneTerms = new ArrayList<Term>();
+			zoneTerms.add(new NumberTermImpl(getCell(x,y).getZoneNumber()));
+			Predicate p1 = new Predicate("zone");
+			p1.setTerms(zoneTerms);
+			removePercept(agName, p1);
+			
+			zoneTerms.clear();
+			zoneTerms.add(new NumberTermImpl(getCell(newX, newY).getZoneNumber()));
+			p1.setTerms(zoneTerms);
+			addPercept(agName, p1);
 		}
-		removePercept(agName, p);
-		getCell(x, y).setOccupied(false);
-		terms.clear();
-		terms.add(new NumberTermImpl(newx));
-		terms.add(new NumberTermImpl(newy));
-		addPercept(agName, p);
-		getCell(newx, newy).setOccupied(true);
 		
-		ArrayList<Term> zoneTerms = new ArrayList<Term>();
-		zoneTerms.add(new NumberTermImpl(getCell(x,y).getZoneNumber()));
-		Predicate p1 = new Predicate("zone");
-		p1.setTerms(zoneTerms);
-		removePercept(agName, p1);
-		
-		zoneTerms.clear();
-		zoneTerms.add(new NumberTermImpl(getCell(newx, newy).getZoneNumber()));
-		p1.setTerms(zoneTerms);
-		addPercept(agName, p1);
 		
 	}
 
