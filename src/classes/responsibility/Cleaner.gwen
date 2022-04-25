@@ -5,15 +5,22 @@ GWENDOLEN
 :Initial Beliefs:
 
 :Initial Goals:
-patrol [achieve]
+cleaning [achieve]
 
 :Plans:
 
-+!goToZone(Z) [achieve]: {~B zone(Z), B at(X, Y)} <- go_to_zone(Z, X, Y);
-+!goToZone(Z) [achieve]: {B zone(Z)} <- -clean(Z), +!clean(Z)[achieve], +goToZone(Z);
++!cleaning [achieve]: {B cleanRequest(Z), B zone(Z), B cleaned(Z)} <- +.lock, finishCleaning(Z), -.lock;
++!cleaning [achieve]: {B cleanRequest(Z), B zone(Z), ~B cleaned(Z), B at(X,Y)} <- +.lock, do_clean(Z, X, Y), -.lock;
++!cleaning [achieve]: {B cleanRequest(Z), ~B zone(Z), B at(X,Y)} <- +.lock, go_to_zone(Z,X,Y), -.lock;
++!cleaning [achieve]: {~B cleanRequest(Z), B at(X,Y)} <- +.lock, checkForRequest, -.lock;
 
-+!clean(Z) [achieve]: {~B cleaned(Z), B at(X,Y)} <- do_clean(Z, X, Y);
-+!clean(Z) [achieve]: {B cleaned(Z)} <- -cleanRequest(Z), -patrol, +!patrol[achieve], -cleaned(Z), , +clean(Z);
 
-+!patrol [achieve]: {~B cleanRequest(Z), B at(X,Y)} <- random_move(X, Y), checkForRequest;
-+!patrol [achieve]: {B cleanRequest(Z)} <- -goToZone(Z), +!goToZone(Z)[achieve], +patrol;
+//+!goToZone(Z) [achieve]: {~B zone(Z), B at(X, Y)} <- go_to_zone(Z, X, Y);
+//+!goToZone(Z) [achieve]: {B zone(Z)} <- -clean(Z), +!clean(Z)[achieve], +goToZone(Z);
+//
+//+!clean(Z) [achieve]: {~B cleaned(Z), B at(X,Y)} <- do_clean(Z, X, Y);
+//+!clean(Z) [achieve]: {B cleaned(Z)} <- -patrol, force_drop("patrol"), -cleaned(Z), -cleanRequest(Z), +!patrol[achieve], +clean(Z);
+//
+//+!patrol [achieve]: {~B cleanRequest(Z), B at(X,Y)} <- checkForRequest;
+/+!patrol [achieve]: {B cleanRequest(Z), ~B testing} <- +gotToZone(Z), +!test[perform];
+

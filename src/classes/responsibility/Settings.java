@@ -48,4 +48,5 @@ public class Settings implements Serializable
 	public void setDirtAppearanceChange(int dirtAppearanceChange) {
 		this.dirtAppearanceChange = dirtAppearanceChange;
 	}
+
 }

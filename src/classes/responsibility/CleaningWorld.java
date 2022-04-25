@@ -9,10 +9,12 @@ import java.io.FileReader;
 import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Random;
 import java.util.Set;
+import java.util.Stack;
 
 import ail.mas.DefaultEnvironment;
 import ail.mas.scheduling.RoundRobinScheduler;
@@ -21,7 +23,9 @@ import ail.syntax.Action;
 import ail.syntax.Literal;
 import ail.syntax.NumberTerm;
 import ail.syntax.NumberTermImpl;
+import ail.syntax.Plan;
 import ail.syntax.Predicate;
+import ail.syntax.StringTerm;
 import ail.syntax.Term;
 import ail.syntax.Unifier;
 import ail.util.AILexception;
@@ -45,6 +49,8 @@ public class CleaningWorld extends DefaultEnvironment implements MCAPLJobber
 	HashMap<String, Color> agentColours = new HashMap<String, Color>();
 	HashMap<Integer, Pair<Integer, Integer>> zoneStart = new HashMap<Integer, Pair<Integer, Integer>>();
 	HashMap<String, CleaningStatus> agentCleaningStatus = new HashMap<String, CleaningStatus>();
+	
+	Stack<Integer> zonesToClean = new Stack<Integer>();
 	
 	Random r = new Random();
 	
@@ -126,6 +132,11 @@ public class CleaningWorld extends DefaultEnvironment implements MCAPLJobber
 				}
 				line = br.readLine();
 			}
+			for (int zoneNum = 1; zoneNum < zoneStart.size(); zoneNum++)
+			{
+				zonesToClean.add(zoneNum);
+			}
+			Collections.shuffle(zonesToClean);
 			zoneStart.remove(0);//Remove wall zone
 			routeToZones = new Routes(world,zoneStart);
 			setup_scheduler(this, rrs);
@@ -139,8 +150,7 @@ public class CleaningWorld extends DefaultEnvironment implements MCAPLJobber
 	
 	public Unifier executeAction(String agName, Action act) throws AILexception {
 	   	Unifier theta = new Unifier();
-	   	System.out.println(agName + ": executes:" + act.fullstring());
-	   	
+	   	//System.out.println(agName + ": executes:" + act.fullstring());
 	   	switch (act.getFunctor())
 	   	{
 	   		case "random_move":
@@ -155,6 +165,11 @@ public class CleaningWorld extends DefaultEnvironment implements MCAPLJobber
 	   		case "checkForRequest":
 	   			checkForRequest(agName);
 	   			break;
+	   		case "finishCleaning":
+	   			finishCleaning(agName, (int)((NumberTerm)act.getTerm(0)).solve());
+	   			break;
+	   		case "print":
+	   			break;
 	   		default:
 	   			System.out.println(act.getFunctor() + " has not been implemented");
 	   	}
@@ -162,10 +177,25 @@ public class CleaningWorld extends DefaultEnvironment implements MCAPLJobber
     	return theta;
     }
 
+	private void finishCleaning(String agName, int zone) 
+	{
+		Predicate p = new Predicate("cleanRequest");
+		p.addTerm(new NumberTermImpl(zone));
+		removePercept(agName, p);	
+		
+		Predicate p1 = new Predicate("cleaned");
+		p1.addTerm(new NumberTermImpl(zone));
+		removePercept(agName, p1);	
+
+		zonesToClean.add(zone);
+		Collections.shuffle(zonesToClean);
+	}
+
 	private void checkForRequest(String agName) 
 	{
 		Predicate p = new Predicate("cleanRequest");
-		p.addTerm(new NumberTermImpl(r.nextInt(5) + 1));
+		int zoneToClean = zonesToClean.pop();
+		p.addTerm(new NumberTermImpl(zoneToClean));
 		addPercept(agName, p);		
 	}
 
@@ -280,10 +310,11 @@ public class CleaningWorld extends DefaultEnvironment implements MCAPLJobber
 	
 	private void moveAgent(String agName, int x, int y, int newX, int newY)
 	{
-		
-		boolean occupied = getCell(newX, newY).isOccupied();
+		//boolean occupied = getCell(newX, newY).isOccupied();
+		boolean occupied = false;
 		if (!occupied)
 		{
+			getCell(x, y).setOccupied(false);
 			//Remove old at belief
 			ArrayList<Term> terms = new ArrayList<Term>();
 			terms.add(new NumberTermImpl(x));
@@ -291,14 +322,12 @@ public class CleaningWorld extends DefaultEnvironment implements MCAPLJobber
 			Predicate p = new Predicate("at");
 			p.setTerms(terms);
 			removePercept(agName, p);
-			getCell(x, y).setOccupied(false);
 			
 			//Set New at belief
 			terms.clear();
 			terms.add(new NumberTermImpl(newX));
 			terms.add(new NumberTermImpl(newY));
 			addPercept(agName, p);
-			getCell(newX, newY).setOccupied(true);
 			
 			//Update zone belief
 			ArrayList<Term> zoneTerms = new ArrayList<Term>();
@@ -311,6 +340,7 @@ public class CleaningWorld extends DefaultEnvironment implements MCAPLJobber
 			zoneTerms.add(new NumberTermImpl(getCell(newX, newY).getZoneNumber()));
 			p1.setTerms(zoneTerms);
 			addPercept(agName, p1);
+			getCell(newX, newY).setOccupied(true);
 		}
 		
 		
@@ -337,17 +367,24 @@ public class CleaningWorld extends DefaultEnvironment implements MCAPLJobber
 			u.worldUpdate();
 		}
 		//Allow for human eyes
-		try {
+		/*try {
 			Thread.sleep(50);
 		} catch (InterruptedException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
-		}
+		}*/
 	}
 
 	@Override
 	public String getName() {
 		return "Cleaning Environment Jobber";
+	}
+	
+	@Override
+	public boolean done()
+	{
+		//Always something to clean
+		return false;
 	}
 
 	public int getHeight() 
