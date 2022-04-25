@@ -53,6 +53,7 @@ public class CleaningWorld extends DefaultEnvironment implements MCAPLJobber
 	Stack<Integer> zonesToClean = new Stack<Integer>();
 	
 	Random r = new Random();
+	private int simulationDelay;
 	
 	public void addWorldListeners(UpdateToWorld u)
 	{
@@ -169,6 +170,7 @@ public class CleaningWorld extends DefaultEnvironment implements MCAPLJobber
 	   			finishCleaning(agName, (int)((NumberTerm)act.getTerm(0)).solve());
 	   			break;
 	   		case "print":
+	   			System.out.println();
 	   			break;
 	   		default:
 	   			System.out.println(act.getFunctor() + " has not been implemented");
@@ -367,12 +369,15 @@ public class CleaningWorld extends DefaultEnvironment implements MCAPLJobber
 			u.worldUpdate();
 		}
 		//Allow for human eyes
-		/*try {
-			Thread.sleep(50);
-		} catch (InterruptedException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		}*/
+		if (simulationDelay != 0)
+		{
+			try {
+				Thread.sleep(simulationDelay);
+			} catch (InterruptedException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			}
+		}
 	}
 
 	@Override
@@ -405,5 +410,10 @@ public class CleaningWorld extends DefaultEnvironment implements MCAPLJobber
 	public Color getAgentColor(AILAgent ag) 
 	{
 		return agentColours.get(ag.getAgName());
+	}
+
+	public void setSimulationDelay(int value) 
+	{
+		simulationDelay = value;
 	}
 }

@@ -25,6 +25,9 @@ import java.io.ObjectOutputStream;
 import java.awt.event.ActionEvent;
 import javax.swing.JLabel;
 import java.awt.GridLayout;
+import javax.swing.JSlider;
+import javax.swing.event.ChangeListener;
+import javax.swing.event.ChangeEvent;
 
 public class ResponsibilityGUI {
 
@@ -137,8 +140,20 @@ public class ResponsibilityGUI {
 		JButton btnNewButton = new JButton("Start");
 		panel.add(btnNewButton);
 		
-		JLabel lblStatus = new JLabel("Status");
-		panel.add(lblStatus);
+		JLabel lblNewLabel = new JLabel("Simulation delay");
+		panel.add(lblNewLabel);
+		
+		JSlider slider = new JSlider();
+		slider.addChangeListener(new ChangeListener() {
+			public void stateChanged(ChangeEvent e) {
+				cwt.setSimulationDelay(slider.getValue());
+			}
+		});
+		slider.setMajorTickSpacing(10);
+		slider.setSnapToTicks(true);
+		slider.setPaintTicks(true);
+		slider.setValue(0);
+		panel.add(slider);
 		frmResponsibilityGwen.getContentPane().add(cwt, BorderLayout.CENTER);
 		
 		btnNewButton.addActionListener(new ActionListener() 

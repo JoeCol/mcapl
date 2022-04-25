@@ -385,7 +385,10 @@ public class ListTermImpl extends Predicate implements ListTerm {
 				s.append(lt);
 			} else {
 				s.append( lt.getHead() );
-				s.append(",");
+				if (i.hasNext()) //Joe, possible fix for tail having extra ,
+				{
+					s.append(",");
+				}
 			}
 		}
 		s.append("]");

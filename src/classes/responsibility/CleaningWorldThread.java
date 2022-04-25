@@ -25,10 +25,12 @@ public class CleaningWorldThread extends JPanel implements Runnable
 	private String configfile;
 	private MCAPLcontroller mccontrol;
 	private MAS mas;
+	private int simulationDelay;
 	
 	@Override
 	public void run() {
 		world = new CleaningWorld();
+		world.setSimulationDelay(simulationDelay);
 		world.addWorldListeners(new UpdateToWorld() {
 			@Override
 			public void worldUpdate() {
@@ -140,17 +142,24 @@ public class CleaningWorldThread extends JPanel implements Runnable
 				
 				while (lit.hasNext())
 				{
-					Literal l = lit.next();
-					if (l.getFunctor().equalsIgnoreCase("at"))
+					try
 					{
-						int x = (int)((NumberTerm)l.getTerm(0)).solve();
-						int y = (int)((NumberTerm)l.getTerm(1)).solve();
-						int tx = 1+(x * widthOfCell);
-						int ty = g.getFontMetrics().getHeight() + (y * heightOfCell);
-						g.setColor(world.getAgentColor(ag));
-						g.fillOval(tx, ty, widthOfCell, heightOfCell);
-						g.setColor(Color.BLACK);
-						g.drawString(ag.getAgName(), tx, ty + (heightOfCell / 2));
+						Literal l = lit.next();
+						if (l.getFunctor().equalsIgnoreCase("at"))
+						{
+							int x = (int)((NumberTerm)l.getTerm(0)).solve();
+							int y = (int)((NumberTerm)l.getTerm(1)).solve();
+							int tx = 1+(x * widthOfCell);
+							int ty = g.getFontMetrics().getHeight() + (y * heightOfCell);
+							g.setColor(world.getAgentColor(ag));
+							g.fillOval(tx, ty, widthOfCell, heightOfCell);
+							g.setColor(Color.BLACK);
+							g.drawString(ag.getAgName(), tx, ty + (heightOfCell / 2));
+						}
+					}
+					catch (Exception ex)
+					{
+						
 					}
 				}
 			}
@@ -165,5 +174,14 @@ public class CleaningWorldThread extends JPanel implements Runnable
 
 	public Settings getSettings() {
 		return world.getSettings();
+	}
+
+	public void setSimulationDelay(int value) 
+	{
+		simulationDelay = value;
+		if (world != null)
+		{
+			world.setSimulationDelay(value);
+		}
 	}
 }

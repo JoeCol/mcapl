@@ -14,3 +14,7 @@ mas.agent.3.name = second_agent
 mas.agent.3.file = /src/classes/responsibility/Cleaner.gwen
 mas.agent.3.builder = gwendolen.GwendolenAgentBuilder
 
+mas.agent.4.name = responsible_agent
+mas.agent.4.file = /src/classes/responsibility/responsible_cleaner.gwen
+mas.agent.4.builder = gwendolen.GwendolenAgentBuilder
+
