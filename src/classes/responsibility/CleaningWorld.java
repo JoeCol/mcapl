@@ -170,7 +170,7 @@ public class CleaningWorld extends DefaultEnvironment implements MCAPLJobber
 	   			finishCleaning(agName, (int)((NumberTerm)act.getTerm(0)).solve());
 	   			break;
 	   		case "print":
-	   			System.out.println();
+	   			//System.out.println();
 	   			break;
 	   		default:
 	   			System.out.println(act.getFunctor() + " has not been implemented");

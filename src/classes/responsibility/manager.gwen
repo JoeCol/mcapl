@@ -1,0 +1,41 @@
+GWENDOLEN
+
+:name: manager
+
+:Initial Beliefs:
+getRes(safety,manager,delegate([em,NoObs]),report(failSafety),1)
+getRes(cleaning,manager,delegate([wipe,windows,hoover]),report(failCleaning),1)
+getRes(em,manager,delegate([em,NoObs]),report(failSafety),1)
+getRes(NoObs,manager,delegate([wipe,windows,hoover]),report(failCleaning),1)
+getRes(wipe,wiper,delegate(wipe),report(failSafety),1)
+getRes(windows,windowcleaner,delegate(windows),report(failCleaning),1)
+getRes(hoover,wiper,delegate(hoover),report(failCleaning),1)
+
+responsibilities([safety, cleaning])
+
+:Reasoning Rules:
+
+have_responsibility(H,T,L) :- responsibilities([H|T]), responsibilities(L);  
+
+:Initial Goals:
+resolveRes[perform]
+
+:Plans: 
+
+//Add Responsibility
++!addResponsibility([])[perform] : {True} <- +!resolveRes[perform];
++!addResponsibility([H|T])[perform] : {B responsibilities(L)} <- print(L), -responsibilities(L), +responsibilities([H|L]), +!addResponsibility(T)[perform];
++!addResponsibility(X)[perform] : {B responsibilities(L)} <- print(X), -responsibilities(L), +responsibilities([X|L]);
+//If no responsibilities
++!addResponsibility([H|T])[perform] : {True} <- +responsibilities([H]), +!addResponsibility(T)[perform];
++!addResponsibility(X)[perform] : {True} <- +responsibilities([X]);
+
+//Received a delegated responsibility
++.received(:tell, X): {True} <- +!addResponsibility(X)[perform];
+
+//Delegate
++!delegate(X,Ags)[perform] : {True} <- .send(Ags,:tell,X);
+
+//Do Responsibility
++!resolveRes[perform] : {B have_responsibility(Res,Tail,Full), B getRes(Res,Ags,delegate(X),FailAction,1)} <- -responsibilities(Full), +responsibilities(Tail), +!delegate(X, Ags)[perform], +!resolveRes [perform];
++!resolveRes[perform] : {True} <- print("Nothing");
