@@ -3,22 +3,28 @@ GWENDOLEN
 :name: manager
 
 :Initial Beliefs:
-getRes(safety,manager,delegate([em,NoObs]),report(failSafety),1)
-getRes(cleaning,manager,delegate([wipe,windows,hoover]),report(failCleaning),1)
-getRes(em,manager,delegate([em,NoObs]),report(failSafety),1)
-getRes(NoObs,manager,delegate([wipe,windows,hoover]),report(failCleaning),1)
-getRes(wipe,wiper,delegate(wipe),report(failSafety),1)
-getRes(windows,windowcleaner,delegate(windows),report(failCleaning),1)
-getRes(hoover,wiper,delegate(hoover),report(failCleaning),1)
+//Cleaning responsibility actions
+res(clean, delegate, agent1)
+res(hoover, delegate, agent1)
+res(observeDirt, delegate, manager)
 
-responsibilities([safety, cleaning])
+//Safety responsibility actions
+res(safety, delegate, manager)
+res(observeSafe, observe, null)
+
+//Tree nodes for responsibilities
+resTree(cleaning, [clean, hoover, observeDirt])
+resTree(clean, [])
+resTree(hoover, [])
+resTree(observeDirt, [])
+
+resTree(safety, [observeSafe])
+resTree(observeSafe, [])
 
 :Reasoning Rules:
 
-have_responsibility(H,T,L) :- responsibilities([H|T]), responsibilities(L);  
-
 :Initial Goals:
-resolveRes[perform]
+resolveRes([safety, cleaning])[perform]
 
 :Plans: 
 
@@ -33,9 +39,20 @@ resolveRes[perform]
 //Received a delegated responsibility
 +.received(:tell, X): {True} <- +!addResponsibility(X)[perform];
 
+//Observe Dirt
++!observe[achieve] : {B observed(X)} <- +!resolveRes([clean(X)]);
++!observe[achieve] : {B readyToObserve} <- observeDirt;
++!observe[achieve] : {True} <- goToRandomZone;
+
 //Delegate
 +!delegate(X,Ags)[perform] : {True} <- .send(Ags,:tell,X);
 
-//Do Responsibility
-+!resolveRes[perform] : {B have_responsibility(Res,Tail,Full), B getRes(Res,Ags,delegate(X),FailAction,1)} <- -responsibilities(Full), +responsibilities(Tail), +!delegate(X, Ags)[perform], +!resolveRes [perform];
-+!resolveRes[perform] : {True} <- print("Nothing");
+//Responsilibilty Actions
++!doRes(H)[perform] : {B res(H, delegate, Ags} <- +!delegate(H, Ags)[perform];
++!doRes(H)[perform] : {B res(H, observe, null} <- +!observe[achieve]);
+
+//Resolve responsibility Responsibility
++!resolveRes([H|T])[perform] : {B resTree(H,[])} <- print(H), +!doRes(H)[perform], +!resolveRes(T)[perform];
++!resolveRes([H|T])[perform] : {B resTree(H, N)} <- print(H), append(N,T,Z), +!resolveRes(Z)[perform];
++!resolveRes(H)[perform] : {True} <- print(H), print("Last Item");
++!resolveRes([])[perform] : {True} <- print("Nothing");

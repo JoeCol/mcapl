@@ -20,6 +20,7 @@ import ail.mas.DefaultEnvironment;
 import ail.mas.scheduling.RoundRobinScheduler;
 import ail.semantics.AILAgent;
 import ail.syntax.Action;
+import ail.syntax.ListTerm;
 import ail.syntax.Literal;
 import ail.syntax.NumberTerm;
 import ail.syntax.NumberTermImpl;
@@ -154,6 +155,14 @@ public class CleaningWorld extends DefaultEnvironment implements MCAPLJobber
 	   	//System.out.println(agName + ": executes:" + act.fullstring());
 	   	switch (act.getFunctor())
 	   	{
+	   		case "append":
+	   			ListTerm firstList = (ListTerm)act.getTerm(0);
+	   			ListTerm secondList = (ListTerm)act.getTerm(1);
+	   			firstList.concat(secondList);
+	   			Predicate p = new Predicate();
+	   			p.addTerms(firstList);
+	   			p.unifies(act.getTerm(2), theta);
+	   			break;
 	   		case "random_move":
 	   			randomlyMoveAgent(agName, (int)((NumberTerm)act.getTerm(0)).solve(), (int)((NumberTerm)act.getTerm(1)).solve());
 	   			break;
