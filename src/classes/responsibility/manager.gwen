@@ -6,7 +6,7 @@ GWENDOLEN
 //Cleaning responsibility actions
 res(clean, delegate, agent1)
 res(hoover, delegate, agent1)
-res(observeDirt, delegate, manager)
+res(observeDirt, observe, null)
 
 //Safety responsibility actions
 res(safety, delegate, manager)
@@ -28,16 +28,8 @@ resolveRes([safety, cleaning])[perform]
 
 :Plans: 
 
-//Add Responsibility
-+!addResponsibility([])[perform] : {True} <- +!resolveRes[perform];
-+!addResponsibility([H|T])[perform] : {B responsibilities(L)} <- print(L), -responsibilities(L), +responsibilities([H|L]), +!addResponsibility(T)[perform];
-+!addResponsibility(X)[perform] : {B responsibilities(L)} <- print(X), -responsibilities(L), +responsibilities([X|L]);
-//If no responsibilities
-+!addResponsibility([H|T])[perform] : {True} <- +responsibilities([H]), +!addResponsibility(T)[perform];
-+!addResponsibility(X)[perform] : {True} <- +responsibilities([X]);
-
 //Received a delegated responsibility
-+.received(:tell, X): {True} <- +!addResponsibility(X)[perform];
++.received(:tell, X): {True} <- +!resolveRes(X)[perform];
 
 //Observe Dirt
 +!observe[achieve] : {B observed(X)} <- +!resolveRes([clean(X)]);
