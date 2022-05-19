@@ -4,8 +4,8 @@ GWENDOLEN
 
 :Initial Beliefs:
 //Cleaning responsibility actions
-res(clean(X), delegate, agent1)
-res(hoover(X), delegate, agent1)
+res(clean(X), do, null)
+res(hoover(X), do, null)
 res(observeDirt, observe, null)
 
 //Safety responsibility actions
@@ -21,10 +21,12 @@ resTree(observeDirt, [])
 resTree(safety, [observeSafe])
 resTree(observeSafe, [])
 
+
+cleanlist([])
 :Reasoning Rules:
 
 :Initial Goals:
-resolveRes([safety, cleaning])[perform]
+resolveRes([safety])[perform]
 
 :Plans: 
 
@@ -32,18 +34,24 @@ resolveRes([safety, cleaning])[perform]
 +.received(:tell, X): {True} <- +!resolveRes(X)[perform];
 
 //Observe Dirt
-+!observe[perform] : {B observed(X)} <- -goZone(Z), +!resolveRes([clean(X)])[perform];
-+!observe[perform] : {B observedNoDirt(X)} <- -goZone(Z);
-+!observe[perform] : {B goZone(Z), zone(Z)} <- observeDirt, +!observe[perform];
-+!observe[perform] : {B goZone(Z), at(X,Y)} <- go_to_zone(Z, X, Y), +!observe[perform];
-+!observe[perform] : {B at(X,Y)} <- getRandomZone(Z), +goZone(Z), +!observe[perform];
++!observe[achieve] : {B observed(X)} <- +!resolveRes([clean(X)])[perform];
++!observe[achieve] : {B readyToObserve} <- observeDirt;
++!observe[achieve] : {True} <- goToRandomZone;
 
 //Delegate
 +!delegate(X,Ags)[perform] : {True} <- .send(Ags,:tell,X);
 
+//Clean and hoover
++!clean
++!clean [perform] : {B cleaned(Z)} <- print("Finished Cleaning");
++!clean [perform] : {B cleanlist([Z|T]), B zone(Z), B at(X,Y)} <- print("Cleaning"), do_clean(Z, X, Y), +!clean [perform];
++!clean [perform] : {~B zone(Z), B at(X,Y)} <- print("Going to zone"), go_to_zone(Z, X, Y), +!clean [perform];
+
 //Responsilibilty Actions
 +!doRes(H)[perform] : {B res(H, delegate, Ags)} <- +!delegate(H, Ags)[perform];
-+!doRes(H)[perform] : {B res(H, observe, null)} <- +!observe[perform];
++!doRes(H)[perform] : {B res(H, observe, null)} <- +!observe[achieve];
++!doRes(clean(X))[perform] : {B res(clean(X), do, B cleanlist(Y)} <- +.lock, -cleanlist(Y), append(X,Y,Z), +cleanlist(Z), +!clean[perform], -.lock;
++!doRes(hoover(X))[perform] : {B res(hoover(X), do, null)} <- +!clean[perform];
 
 //Resolve responsibility Responsibility
 +!resolveRes([H|T])[perform] : {B resTree(H,[])} <- print(H), +!doRes(H)[perform], +!resolveRes(T)[perform];

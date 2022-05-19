@@ -31,6 +31,7 @@ import ail.syntax.Term;
 import ail.syntax.Unifier;
 import ail.util.AILexception;
 import ajpf.MCAPLJobber;
+import ajpf.psl.MCAPLNumberTermImpl;
 import gov.nasa.jpf.util.Pair;
 
 interface UpdateToWorld{
@@ -153,15 +154,23 @@ public class CleaningWorld extends DefaultEnvironment implements MCAPLJobber
 	public Unifier executeAction(String agName, Action act) throws AILexception {
 	   	Unifier theta = new Unifier();
 	   	//System.out.println(agName + ": executes:" + act.fullstring());
+	   	
+	  //Remove old at belief
+  		ArrayList<Term> terms = new ArrayList<Term>();
+  		terms.add(new NumberTermImpl(getDirtInAgentZone(agName)));
+  		Predicate p = new Predicate("dirtInZone");
+  		p.setTerms(terms);
+  		removePercept(agName, p);
+  		
 	   	switch (act.getFunctor())
 	   	{
 	   		case "append":
 	   			ListTerm firstList = (ListTerm)act.getTerm(0);
 	   			ListTerm secondList = (ListTerm)act.getTerm(1);
 	   			firstList.concat(secondList);
-	   			Predicate p = new Predicate();
-	   			p.addTerms(firstList);
-	   			p.unifies(act.getTerm(2), theta);
+	   			Predicate p2 = new Predicate();
+	   			p2.addTerms(firstList);
+	   			p2.unifies(act.getTerm(2), theta);
 	   			break;
 	   		case "random_move":
 	   			randomlyMoveAgent(agName, (int)((NumberTerm)act.getTerm(0)).solve(), (int)((NumberTerm)act.getTerm(1)).solve());
@@ -178,15 +187,55 @@ public class CleaningWorld extends DefaultEnvironment implements MCAPLJobber
 	   		case "finishCleaning":
 	   			finishCleaning(agName, (int)((NumberTerm)act.getTerm(0)).solve());
 	   			break;
+	   		case "goToRandomZone":
+	   			Predicate p1 = new Predicate();
+	   			p1.addTerm(new NumberTermImpl(r.nextInt(zoneStart.keySet().size())));
+	   			p1.unifies(act.getTerm(0), theta);
+	   			break;
 	   		case "print":
 	   			//System.out.println();
 	   			break;
 	   		default:
 	   			System.out.println(act.getFunctor() + " has not been implemented");
 	   	}
+	   	
+	   	//When agent does an action, update environmental beliefs
+	   	
+	   	
+		
+		//Set New at belief
+		terms.clear();
+		terms.add(new NumberTermImpl(getDirtInAgentZone(agName)));
+		addPercept(agName, p);
 	   	super.executeAction(agName, act);
     	return theta;
     }
+
+	private int getDirtInAgentZone(String agName) 
+	{
+		//Get zone for agent
+		int zone = 0;
+		for (AILAgent a : getAgents())
+		{
+			if (agName.equals(a.getAgName()))
+			{
+				zone = getCell(x,y).getZoneNumber();
+				break;
+			}
+		}
+		
+		for (WorldCell[] row : world)
+		{
+			for (WorldCell cell : row)
+			{
+				if (cell.getZoneNumber() == zone && cell.hasDirt())
+				{
+					return 1;
+				}
+			}
+		}
+		return 0;//No dirty, 0 is false
+	}
 
 	private void finishCleaning(String agName, int zone) 
 	{
@@ -373,6 +422,7 @@ public class CleaningWorld extends DefaultEnvironment implements MCAPLJobber
 				world[x][y].setChangeOfDirt(currentSettings.getDirtAppearanceChange());
 			}
 		}
+		
 		for (UpdateToWorld u : listeners)
 		{
 			u.worldUpdate();
