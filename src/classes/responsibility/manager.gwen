@@ -4,13 +4,12 @@ GWENDOLEN
 
 :Initial Beliefs:
 //Cleaning responsibility actions
-res(clean(X), delegate, agent1)
-res(hoover(X), delegate, agent1)
-res(observeDirt, observe, null)
+res(clean, delegate, agent1)
+res(hoover, delegate, agent1)
+res(observeDirt, observeDirt, null)
 
 //Safety responsibility actions
-res(safety, delegate, manager)
-res(observeSafe, observe, null)
+res(observeSafe, observeSafe, null)
 
 //Tree nodes for responsibilities
 resTree(cleaning, [clean, hoover, observeDirt])
@@ -31,22 +30,26 @@ resolveRes([safety, cleaning])[perform]
 //Received a delegated responsibility
 +.received(:tell, X): {True} <- +!resolveRes(X)[perform];
 
-//Observe Dirt
-+!observe[perform] : {B observed(X)} <- -goZone(Z), +!resolveRes([clean(X)])[perform];
-+!observe[perform] : {B observedNoDirt(X)} <- -goZone(Z);
-+!observe[perform] : {B goZone(Z), zone(Z)} <- observeDirt, +!observe[perform];
-+!observe[perform] : {B goZone(Z), at(X,Y)} <- go_to_zone(Z, X, Y), +!observe[perform];
-+!observe[perform] : {B at(X,Y)} <- getRandomZone(Z), +goZone(Z), +!observe[perform];
-
 //Delegate
 +!delegate(X,Ags)[perform] : {True} <- .send(Ags,:tell,X);
 
-//Responsilibilty Actions
+//Responsibilty Actions
 +!doRes(H)[perform] : {B res(H, delegate, Ags)} <- +!delegate(H, Ags)[perform];
-+!doRes(H)[perform] : {B res(H, observe, null)} <- +!observe[perform];
++!doRes(H)[perform] : {B res(H, observeDirt, null)} <- +!observeDirt[perform];
++!doRes(H)[perform] : {B res(H, observeSafe, null)} <- +!observeSafe[perform];
 
 //Resolve responsibility Responsibility
-+!resolveRes([H|T])[perform] : {B resTree(H,[])} <- print(H), +!doRes(H)[perform], +!resolveRes(T)[perform];
++!resolveRes([H|T])[perform] : {B resTree(H, [])} <- print(H), +!doRes(H)[perform], +!resolveRes(T)[perform];
 +!resolveRes([H|T])[perform] : {B resTree(H, N)} <- print(H), append(N,T,Z), +!resolveRes(Z)[perform];
-+!resolveRes(H)[perform] : {True} <- print(H), print("Last Item");
 +!resolveRes([])[perform] : {True} <- print("Nothing");
++!resolveRes(H)[perform] : {True} <- print(H), print("Last Item");
+
+//Observe Dirt
++!observeDirt[perform] : {B goZone(Z), B zone(Z), B dirtInZone(1)} <- -goZone(Z), +!resolveRes([clean, observeDirt])[perform];
++!observeDirt[perform] : {B goZone(Z), B zone(Z), B dirtInZone(0)} <- -goZone(Z), +!resolveRes([observeDirt])[perform];
++!observeDirt[perform] : {B goZone(Z), B at(X,Y)} <- go_to_zone(Z, X, Y), +!observe[perform];
++!observeDirt[perform] : {B at(X,Y)} <- getRandomZone(Z), +goZone(Z), +!observe[perform];
+
+//Observe Safe
++!observeSafe[perform] : {True} <- print("safe"), +!resolveRes([observeSafe])[perform];
+

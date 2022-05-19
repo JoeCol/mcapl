@@ -187,12 +187,12 @@ public class CleaningWorld extends DefaultEnvironment implements MCAPLJobber
 	   		case "finishCleaning":
 	   			finishCleaning(agName, (int)((NumberTerm)act.getTerm(0)).solve());
 	   			break;
-	   		case "goToRandomZone":
-	   			Predicate p1 = new Predicate();
-	   			p1.addTerm(new NumberTermImpl(r.nextInt(zoneStart.keySet().size())));
-	   			p1.unifies(act.getTerm(0), theta);
+	   		case "getRandomZone":
+	   			NumberTerm n = new NumberTermImpl(1 + r.nextInt(zoneStart.keySet().size()));
+	   			n.unifies(act.getTerm(0), theta);
 	   			break;
 	   		case "print":
+	   		case "send":
 	   			//System.out.println();
 	   			break;
 	   		default:
@@ -219,6 +219,18 @@ public class CleaningWorld extends DefaultEnvironment implements MCAPLJobber
 		{
 			if (agName.equals(a.getAgName()))
 			{
+				int x = 0;
+				int y = 0;
+				Iterator<Literal> it = a.getBB().getPercepts();
+				while (it.hasNext())
+				{
+					Literal l = it.next();
+					if (l.getFunctor().equals("at"))
+					{
+						x = (int)((NumberTerm)l.getTerm(0)).solve();
+						y = (int)((NumberTerm)l.getTerm(1)).solve();
+					}
+				}
 				zone = getCell(x,y).getZoneNumber();
 				break;
 			}

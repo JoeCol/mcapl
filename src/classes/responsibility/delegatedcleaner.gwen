@@ -42,7 +42,6 @@ resolveRes([safety])[perform]
 +!delegate(X,Ags)[perform] : {True} <- .send(Ags,:tell,X);
 
 //Clean and hoover
-+!clean
 +!clean [perform] : {B cleaned(Z)} <- print("Finished Cleaning");
 +!clean [perform] : {B cleanlist([Z|T]), B zone(Z), B at(X,Y)} <- print("Cleaning"), do_clean(Z, X, Y), +!clean [perform];
 +!clean [perform] : {~B zone(Z), B at(X,Y)} <- print("Going to zone"), go_to_zone(Z, X, Y), +!clean [perform];

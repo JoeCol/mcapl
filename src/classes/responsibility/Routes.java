@@ -69,20 +69,20 @@ public class Routes
 								checked.put(new Pair<Integer, Integer>(x,y), true);
 							}
 						}
-						System.out.println(checked.size() + " vs " + (tmpWorld.length * tmpWorld[0].length));
+						//System.out.println(checked.size() + " vs " + (tmpWorld.length * tmpWorld[0].length));
 						done = checked.size() == tmpWorld.length * tmpWorld[0].length;
 					}
 				}
 			}
 		}
-		for (int[] rows : costs)
+		/*for (int[] rows : costs)
 		{
 			for (int cell : rows)
 			{
 				System.out.print(cell + ",");
 			}
 			System.out.println();
-		}
+		}*/
 		return costs;
 	}
 
