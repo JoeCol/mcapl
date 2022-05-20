@@ -23,7 +23,7 @@ resTree(observeSafe, [])
 :Reasoning Rules:
 
 :Initial Goals:
-resolveRes([safety, cleaning])[perform]
+resolveRes([cleaning, safety])[perform]
 
 :Plans: 
 
@@ -39,16 +39,16 @@ resolveRes([safety, cleaning])[perform]
 +!doRes(H)[perform] : {B res(H, observeSafe, null)} <- +!observeSafe[perform];
 
 //Resolve responsibility Responsibility
-+!resolveRes([H|T])[perform] : {B resTree(H, [])} <- print(H), +!doRes(H)[perform], +!resolveRes(T)[perform];
-+!resolveRes([H|T])[perform] : {B resTree(H, N)} <- print(H), append(N,T,Z), +!resolveRes(Z)[perform];
++!resolveRes([H|T])[perform] : {B resTree(H, [])} <- print(H), print(1), +!doRes(H)[perform], +!resolveRes(T)[perform];
++!resolveRes([H|T])[perform] : {B resTree(H, N)} <- print(H), print(2), append(N,T,Z), +!resolveRes(Z)[perform];
 +!resolveRes([])[perform] : {True} <- print("Nothing");
 +!resolveRes(H)[perform] : {True} <- print(H), print("Last Item");
 
 //Observe Dirt
 +!observeDirt[perform] : {B goZone(Z), B zone(Z), B dirtInZone(1)} <- -goZone(Z), +!resolveRes([clean, observeDirt])[perform];
 +!observeDirt[perform] : {B goZone(Z), B zone(Z), B dirtInZone(0)} <- -goZone(Z), +!resolveRes([observeDirt])[perform];
-+!observeDirt[perform] : {B goZone(Z), B at(X,Y)} <- go_to_zone(Z, X, Y), +!observe[perform];
-+!observeDirt[perform] : {B at(X,Y)} <- getRandomZone(Z), +goZone(Z), +!observe[perform];
++!observeDirt[perform] : {B goZone(Z), B at(X,Y)} <- go_to_zone(Z, X, Y), +!observeDirt[perform];
++!observeDirt[perform] : {B at(X,Y)} <- getRandomZone(Z), +goZone(Z), +!observeDirt[perform];
 
 //Observe Safe
 +!observeSafe[perform] : {True} <- print("safe"), +!resolveRes([observeSafe])[perform];

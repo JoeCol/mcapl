@@ -95,7 +95,7 @@ public class CleaningWorld extends DefaultEnvironment implements MCAPLJobber
 		//Randomly position agents
 		int x = 1;
 		for (AILAgent a : getAgents())
-		{
+		{	
 			ArrayList<Term> terms = new ArrayList<Term>();
 			terms.add(new NumberTermImpl(x++));
 			terms.add(new NumberTermImpl(1));
@@ -168,9 +168,7 @@ public class CleaningWorld extends DefaultEnvironment implements MCAPLJobber
 	   			ListTerm firstList = (ListTerm)act.getTerm(0);
 	   			ListTerm secondList = (ListTerm)act.getTerm(1);
 	   			firstList.concat(secondList);
-	   			Predicate p2 = new Predicate();
-	   			p2.addTerms(firstList);
-	   			p2.unifies(act.getTerm(2), theta);
+	   			firstList.unifies(act.getTerm(2), theta);
 	   			break;
 	   		case "random_move":
 	   			randomlyMoveAgent(agName, (int)((NumberTerm)act.getTerm(0)).solve(), (int)((NumberTerm)act.getTerm(1)).solve());
