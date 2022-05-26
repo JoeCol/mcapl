@@ -4,7 +4,7 @@ GWENDOLEN
 
 :Initial Beliefs:
 //Cleaning responsibility actions
-res(clean, delegate, agent1)
+res(clean(X), delegate, agent1)
 res(hoover, delegate, agent1)
 res(observeDirt, observeDirt, null)
 
@@ -12,23 +12,26 @@ res(observeDirt, observeDirt, null)
 res(observeSafe, observeSafe, null)
 
 //Tree nodes for responsibilities
-resTree(cleaning, [clean, hoover, observeDirt])
-resTree(clean, [])
+resTree(cleaning, [observeDirt]) //clean and hoover are implied
+resTree(clean(X), [])
 resTree(hoover, [])
 resTree(observeDirt, [])
 
 resTree(safety, [observeSafe])
 resTree(observeSafe, [])
 
+//List of responsibilities
+todo([cleaning,safety])
+
 :Reasoning Rules:
 
 :Initial Goals:
-resolveRes([cleaning, safety])[perform]
+resolveRes[perform]
 
 :Plans: 
 
 //Received a delegated responsibility
-+.received(:tell, X): {True} <- +!resolveRes(X)[perform];
++.received(:tell, X): {True} <- +!resolveRes[perform];
 
 //Delegate
 +!delegate(X,Ags)[perform] : {True} <- .send(Ags,:tell,X);
@@ -39,17 +42,21 @@ resolveRes([cleaning, safety])[perform]
 +!doRes(H)[perform] : {B res(H, observeSafe, null)} <- +!observeSafe[perform];
 
 //Resolve responsibility Responsibility
-+!resolveRes([H|T])[perform] : {B resTree(H, [])} <- print(H), print(1), +!doRes(H)[perform], +!resolveRes(T)[perform];
-+!resolveRes([H|T])[perform] : {B resTree(H, N)} <- print(H), print(2), append(N,T,Z), +!resolveRes(Z)[perform];
-+!resolveRes([])[perform] : {True} <- print("Nothing");
-+!resolveRes(H)[perform] : {True} <- print(H), print("Last Item");
++!resolveRes[perform] : {B todo([H|T]), B resTree(H, [])} <- +!remRes(H)[perform], +!doRes(H)[perform], +!resolveRes[perform];
++!resolveRes[perform] : {B todo([H|T]), B resTree(H, N)} <- +!remRes(H)[perform], +!addRes(N)[perform], +!resolveRes[perform];
++!resolveRes[perform] : {B todo([])} <- print("Nothing");
++!resolveRes[perform] : {B todo(Z)} <- print("Broken on "), print(Z);
+
+//Responsibility List Management
++!addRes(X)[perform] : {B todo(Z)} <- +.lock, -todo(Z), print(Z), print("Adding"), print(X), append(X,Z,Y), +todo(Y), -.lock;
++!remRes(X)[perform] : {B todo(Z)} <- +.lock, -todo(Z), print(Z), print("Removing"), print(X), delete(X,Z,Y), +todo(Y), -.lock;
 
 //Observe Dirt
-+!observeDirt[perform] : {B goZone(Z), B zone(Z), B dirtInZone(1)} <- -goZone(Z), +!resolveRes([clean, observeDirt])[perform];
-+!observeDirt[perform] : {B goZone(Z), B zone(Z), B dirtInZone(0)} <- -goZone(Z), +!resolveRes([observeDirt])[perform];
-+!observeDirt[perform] : {B goZone(Z), B at(X,Y)} <- go_to_zone(Z, X, Y), +!observeDirt[perform];
-+!observeDirt[perform] : {B at(X,Y)} <- getRandomZone(Z), +goZone(Z), +!observeDirt[perform];
++!observeDirt[perform] : {B goZone(Z), B zone(Z), B dirtInZone(1)} <- -goZone(Z), +!addRes([observeDirt])[perform], +!addRes([clean(Z)])[perform];
++!observeDirt[perform] : {B goZone(Z), B zone(Z), B dirtInZone(0)} <- -goZone(Z), +!addRes([observeDirt])[perform];
++!observeDirt[perform] : {B goZone(Z), B at(X,Y)} <- go_to_zone(Z, X, Y), +!addRes([observeDirt])[perform];
++!observeDirt[perform] : {B at(X,Y)} <- getRandomZone(Z), +goZone(Z), +!addRes([observeDirt])[perform];
 
 //Observe Safe
-+!observeSafe[perform] : {True} <- print("safe"), +!resolveRes([observeSafe])[perform];
++!observeSafe[perform] : {True} <- print("safe"), +!addRes([observeSafe])[perform];
 

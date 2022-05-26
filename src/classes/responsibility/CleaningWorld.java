@@ -167,8 +167,21 @@ public class CleaningWorld extends DefaultEnvironment implements MCAPLJobber
 	   		case "append":
 	   			ListTerm firstList = (ListTerm)act.getTerm(0);
 	   			ListTerm secondList = (ListTerm)act.getTerm(1);
-	   			firstList.concat(secondList);
-	   			firstList.unifies(act.getTerm(2), theta);
+	   			secondList.concat(firstList);
+	   			secondList.unifies(act.getTerm(2), theta);
+	   			break;
+	   		case "delete":
+	   			ListTerm firstList1 = (ListTerm)act.getTerm(0);
+	   			ListTerm secondList1 = (ListTerm)act.getTerm(1);
+	   			if (firstList1.size() > 1)
+	   			{
+	   				secondList1.removeAll(firstList1);
+	   			}
+	   			else
+	   			{
+	   				secondList1.remove(firstList1);
+	   			}
+	   			secondList1.unifies(act.getTerm(2), theta);
 	   			break;
 	   		case "random_move":
 	   			randomlyMoveAgent(agName, (int)((NumberTerm)act.getTerm(0)).solve(), (int)((NumberTerm)act.getTerm(1)).solve());
