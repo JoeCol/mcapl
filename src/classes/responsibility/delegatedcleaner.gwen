@@ -3,66 +3,37 @@ GWENDOLEN
 :name: manager
 
 :Initial Beliefs:
-//Cleaning responsibility actions
-res(clean(X), do, null)
-res(hoover(X), do, null)
-res(observeDirt, observe, null)
+//Cleaning Responsibility Tree
+node(clean,[patrol,no_dirt])
+node(patrol,[patrol_1,patrol_2,patrol_3,patrol_4,patrol_5])
+node(no_dirt,[no_dirt_1,no_dirt_2,no_dirt_3,no_dirt_4,no_dirt_5])
 
-//Safety responsibility actions
-res(observeSafe, observeSafe, null)
+//Current Responsibilities
+currentRes([clean])
+currentItem(0)
+activeRes([])
+completedRes([])
 
-//Tree nodes for responsibilities
-resTree(cleaning, [observeDirt])
-resTree(clean(X), [])
-resTree(hoover(X), [])
-resTree(observeDirt, [])
-
-resTree(safety, [observeSafe])
-resTree(observeSafe, [])
-
-
-//Start
-todo([safety, clean(1), clean(1), clean(5)])
 :Reasoning Rules:
+bNo_dirt :- bNo_dirt_1,bNo_dirt_2,bNo_dirt_3,bNo_dirt_4,bNo_dirt_5
+withinLimit(Res, X) :- length(Res, Y), Y > X
+isActive(RList, Res) :- member(RList, Res)
 
 :Initial Goals:
-resolveRes[perform]
+doRes
 
 :Plans: 
 
-//Clean and hoover
-+!clean(Z)[perform] : {B cleaned(Z), B cleaning} <- -cleaning, finishCleaning(Z), print("Finished Cleaning");
-+!clean(Z)[perform] : {B zone(Z), B at(X,Y), B cleaning} <- print("Cleaning"), do_clean(Z, X, Y), +!clean(Z)[perform];
-+!clean(Z)[perform] : {B at(X,Y)} <- print("Going to zone"), print(Z), go_to_zone(Z, X, Y), +cleaning, +!clean(Z)[perform];
+//Clean Responsibility
++!resolveRes(clean)[perform] {~B isActive(RList, Res), B node(clean, X), B currentRes(Z), B activeRes(Res)} <- -currentRes(Z), remove(clean, Z), append(X, Z, N), +currentRez(N);
 
-//Received a delegated responsibility
-+.received(:tell, X): {True} <- +!addRes([X])[perform];
+//Patrol Responsibility
++!resolveRes(patrol)[perform] {B node(patrol, X), B currentRes(Z)} <- -currentRes(Z), remove(patrol, Z), append(X, Z, N), +currentRez(N);
 
-//Delegate
-+!delegate(X,Ags)[perform] : {True} <- .send(Ags,:tell,X);
+//Dirt Responsibility
++!resolveRes(no_dirt)[perform] {B bNo_dirt, B activeRes(Res)} <- remove(no_dirt, Res, NRes), -activeRes(Res), +activeRes(NRes);
 
-//Responsibilty Actions
-+!doRes(H)[perform] : {B res(H, delegate, Ags)} <- +!delegate(H, Ags)[perform];
-+!doRes(H)[perform] : {B res(H, observeDirt, null)} <- +!observeDirt[perform];
-+!doRes(H)[perform] : {B res(H, observeSafe, null)} <- +!observeSafe[perform];
-+!doRes(H)[perform] : {B res(clean(X), do, null)} <- print(X), +!clean(X)[perform];
 
-//Resolve responsibility Responsibility
-+!resolveRes[perform] : {B todo([H|T]), B resTree(H, [])} <- +.lock, +!remRes(H)[perform], +!doRes(H)[perform], +!resolveRes[perform], -.lock;
-+!resolveRes[perform] : {B todo([H|T]), B resTree(H, N)} <- +.lock, +!remRes(H)[perform], +!addRes(N)[perform], +!resolveRes[perform], -.lock;
-+!resolveRes[perform] : {B todo([])} <- print("Nothing");
-+!resolveRes[perform] : {B todo(Z)} <- print("Broken on "), print(Z);
-
-//Responsibility List Management
-+!addRes(X)[perform] : {B todo(Z)} <- +.lock, -todo(Z), print(Z), print("Adding"), print(X), append(X,Z,Y), +todo(Y), -.lock;
-+!remRes(X)[perform] : {B todo(Z)} <- +.lock, -todo(Z), print(Z), print("Removing"), print(X), delete(X,Z,Y), +todo(Y), -.lock;
-
-//Observe Dirt
-+!observeDirt[perform] : {B goZone(Z), B zone(Z), B dirtInZone(1)} <- -goZone(Z), +!addRes([observeDirt])[perform], +!addRes([clean(Z)])[perform];
-+!observeDirt[perform] : {B goZone(Z), B zone(Z), B dirtInZone(0)} <- -goZone(Z), +!addRes([observeDirt])[perform];
-+!observeDirt[perform] : {B goZone(Z), B at(X,Y)} <- go_to_zone(Z, X, Y), +!addRes([observeDirt])[perform];
-+!observeDirt[perform] : {B at(X,Y)} <- getRandomZone(Z), +goZone(Z), +!addRes([observeDirt])[perform];
-
-//Observe Safe
-+!observeSafe[perform] : {True} <- print("safe"), +!addRes([observeSafe])[perform];
-
+//Traverse Responsibilities, iterate through list
++!doRes[achieve]{B currentRes(Res), B currentItem(X), B withinLimit(Res,X)} <- getCurrentItem(Res, X, H), resolveRes(H)[perform], -currentItem(X), add(X,1,Y), +currentItem(Y);
++!doRes[achieve]{B currentRes(Res), B currentItem(X), ~B withinLimit(Res,X)} <- -currentItem(X), +currentItem(0);
