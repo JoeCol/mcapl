@@ -152,7 +152,7 @@ public class CleaningWorld extends DefaultEnvironment implements MCAPLJobber
 	}
 	
 	public Unifier executeAction(String agName, Action act) throws AILexception {
-	   	Unifier theta = new Unifier();
+	   	Unifier theta = super.executeAction(agName, act);
 	   	//System.out.println(agName + ": executes:" + act.fullstring());
 	   	
 	  //Remove old at belief
@@ -164,11 +164,23 @@ public class CleaningWorld extends DefaultEnvironment implements MCAPLJobber
   		
 	   	switch (act.getFunctor())
 	   	{
-	   		case "append":
+	   		case "getItem":
+	   			ListTerm list = (ListTerm)act.getTerm(0);
+	   			NumberTerm itemNo = (NumberTerm)act.getTerm(1);
+	   			Term item = list.get((int)itemNo.solve());
+	   			item.unifies(act.getTerm(2), theta);
+	   			break;
+	   		case "appendList":
 	   			ListTerm firstList = (ListTerm)act.getTerm(0);
 	   			ListTerm secondList = (ListTerm)act.getTerm(1);
 	   			secondList.concat(firstList);
 	   			secondList.unifies(act.getTerm(2), theta);
+	   			break;
+	   		case "deleteItem":
+	   			Predicate diItem = (Predicate)act.getTerm(0);
+	   			ListTerm diList = (ListTerm)act.getTerm(1);
+	   			diList.remove(diItem);
+	   			diList.unifies(act.getTerm(2), theta);
 	   			break;
 	   		case "delete":
 	   			ListTerm firstList1 = (ListTerm)act.getTerm(0);
@@ -204,6 +216,7 @@ public class CleaningWorld extends DefaultEnvironment implements MCAPLJobber
 	   			break;
 	   		case "print":
 	   		case "send":
+	   		case "sum":
 	   			//System.out.println();
 	   			break;
 	   		default:
@@ -218,7 +231,7 @@ public class CleaningWorld extends DefaultEnvironment implements MCAPLJobber
 		terms.clear();
 		terms.add(new NumberTermImpl(getDirtInAgentZone(agName)));
 		addPercept(agName, p);
-	   	super.executeAction(agName, act);
+	   	
     	return theta;
     }
 

@@ -15,25 +15,29 @@ activeRes([])
 completedRes([])
 
 :Reasoning Rules:
-bNo_dirt :- bNo_dirt_1,bNo_dirt_2,bNo_dirt_3,bNo_dirt_4,bNo_dirt_5
-withinLimit(Res, X) :- length(Res, Y), Y > X
-isActive(RList, Res) :- member(RList, Res)
+bNo_dirt :- bNo_dirt_1,bNo_dirt_2,bNo_dirt_3,bNo_dirt_4,bNo_dirt_5;
+endOfLimit(Res, X) :- length(Res, X);
+isActive(RList, Res) :- member(RList, Res);
 
 :Initial Goals:
-doRes
+doRes[achieve]
 
 :Plans: 
 
 //Clean Responsibility
-+!resolveRes(clean)[perform] {~B isActive(RList, Res), B node(clean, X), B currentRes(Z), B activeRes(Res)} <- -currentRes(Z), remove(clean, Z), append(X, Z, N), +currentRez(N);
++!resolveRes(clean)[perform] : {B currentRes(Z), ~B isActive(Z, clean), B node(clean, X)} <- -currentRes(Z), appendList(X, Z, N), +currentRes(N);
++!resolveRes(clean)[perform] : {B currentRes(Z), B isActive(Z, clean)} <- print("Still cleaning");
 
 //Patrol Responsibility
-+!resolveRes(patrol)[perform] {B node(patrol, X), B currentRes(Z)} <- -currentRes(Z), remove(patrol, Z), append(X, Z, N), +currentRez(N);
++!resolveRes(patrol)[perform] : {B currentRes(Z), ~B isActive(Z, patrol), B node(patrol, X)} <- -currentRes(Z), appendList(X, Z, N), +currentRes(N);
++!resolveRes(patrol)[perform] : {B currentRes(Z), B isActive(Z, patrol)} <- print("Still patrolling");
 
 //Dirt Responsibility
-+!resolveRes(no_dirt)[perform] {B bNo_dirt, B activeRes(Res)} <- remove(no_dirt, Res, NRes), -activeRes(Res), +activeRes(NRes);
++!resolveRes(no_dirt)[perform] : {~B bNo_dirt, B currentRes(Z), ~B isActive(Z, no_dirt)} <- remove(no_dirt, Res, NRes), -activeRes(Res), +activeRes(NRes);
++!resolveRes(no_dirt)[perform] : {B bNo_dirt, B currentRes(Z), ~B isActive(Z, no_dirt)} <- remove(no_dirt, Res, NRes), -activeRes(Res), +activeRes(NRes);
++!resolveRes(no_dirt)[perform] : {B currentRes(Z), B isActive(Z, no_dirt)} <- print("Still No dirt");
 
 
 //Traverse Responsibilities, iterate through list
-+!doRes[achieve]{B currentRes(Res), B currentItem(X), B withinLimit(Res,X)} <- getCurrentItem(Res, X, H), resolveRes(H)[perform], -currentItem(X), add(X,1,Y), +currentItem(Y);
-+!doRes[achieve]{B currentRes(Res), B currentItem(X), ~B withinLimit(Res,X)} <- -currentItem(X), +currentItem(0);
++!doRes[achieve] : {B currentRes(Res), B currentItem(X), ~B endOfLimit(Res,X)} <- getItem(Res, X, H), print(Res), print(X), +!resolveRes(H)[perform], -currentItem(X), sum(X,1,Y), +currentItem(Y);
++!doRes[achieve] : {B currentRes(Res), B currentItem(X), B endOfLimit(Res,X)} <- -currentItem(X), +currentItem(0);
