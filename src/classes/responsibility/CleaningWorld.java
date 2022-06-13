@@ -21,6 +21,7 @@ import ail.mas.scheduling.RoundRobinScheduler;
 import ail.semantics.AILAgent;
 import ail.syntax.Action;
 import ail.syntax.ListTerm;
+import ail.syntax.ListTermImpl;
 import ail.syntax.Literal;
 import ail.syntax.NumberTerm;
 import ail.syntax.NumberTermImpl;
@@ -32,6 +33,7 @@ import ail.syntax.Unifier;
 import ail.util.AILexception;
 import ajpf.MCAPLJobber;
 import ajpf.psl.MCAPLNumberTermImpl;
+import ajpf.psl.MCAPLTerm;
 import gov.nasa.jpf.util.Pair;
 
 interface UpdateToWorld{
@@ -173,8 +175,35 @@ public class CleaningWorld extends DefaultEnvironment implements MCAPLJobber
 	   		case "appendList":
 	   			ListTerm firstList = (ListTerm)act.getTerm(0);
 	   			ListTerm secondList = (ListTerm)act.getTerm(1);
-	   			secondList.concat(firstList);
-	   			secondList.unifies(act.getTerm(2), theta);
+	   			ListTerm appendedList = new ListTermImpl();
+	   			for (int i = 0; i < firstList.getAsList().size(); i++)
+	   			{
+	   				//if (!appendedList.contains(firstList.get(i)))
+	   				//{
+	   					appendedList.add(appendedList.size(), firstList.get(i));
+	   				//}
+	   			}
+	   			for (int i = 0; i < secondList.getAsList().size(); i++)
+	   			{
+	   				//if (!appendedList.contains(secondList.get(i)))
+	   				//{
+	   					appendedList.add(appendedList.size(), secondList.get(i));
+	   				//}
+	   			}
+	   			appendedList.unifies(act.getTerm(2), theta);
+	   			break;
+	   		case "iterateRes":
+	   			ListTerm irList = (ListTerm)act.getTerm(0);
+	   			Term t = irList.get(0);
+	   			irList.remove(0);
+	   			irList.add(irList.size(), t);
+	   			irList.unifies(act.getTerm(1), theta);
+	   			break;
+	   		case "removeList":
+	   			ListTerm listToRem = (ListTerm)act.getTerm(0);
+	   			ListTerm currList = (ListTerm)act.getTerm(1);
+	   			currList.removeAll(listToRem);
+	   			currList.unifies(act.getTerm(2), theta);
 	   			break;
 	   		case "deleteItem":
 	   			Predicate diItem = (Predicate)act.getTerm(0);
@@ -194,6 +223,9 @@ public class CleaningWorld extends DefaultEnvironment implements MCAPLJobber
 	   				secondList1.remove(firstList1);
 	   			}
 	   			secondList1.unifies(act.getTerm(2), theta);
+	   			break;
+	   		case "observeDirt":
+	   			observeDirt(agName);
 	   			break;
 	   		case "random_move":
 	   			randomlyMoveAgent(agName, (int)((NumberTerm)act.getTerm(0)).solve(), (int)((NumberTerm)act.getTerm(1)).solve());
@@ -234,6 +266,44 @@ public class CleaningWorld extends DefaultEnvironment implements MCAPLJobber
 	   	
     	return theta;
     }
+	
+	private int observeDirt(String agName) 
+	{
+		//Get zone for agent
+		int zone = 0;
+		for (AILAgent a : getAgents())
+		{
+			if (agName.equals(a.getAgName()))
+			{
+				Iterator<Literal> it = a.getBB().getPercepts();
+				while (it.hasNext())
+				{
+					Literal l = it.next();
+					if (l.getFunctor().equals("zone"))
+					{
+						zone = (int)((NumberTerm)l.getTerm(0)).solve();
+						break;
+					}
+				}
+			}
+		}
+		String dirtBelief = "bNo_dirt_" + zone;
+		Predicate p = new Predicate(dirtBelief);
+		p.addTerm(new NumberTermImpl(zone));
+		for (WorldCell[] row : world)
+		{
+			for (WorldCell cell : row)
+			{
+				if (cell.getZoneNumber() == zone && cell.hasDirt())
+				{
+					removePercept(agName, p);
+					return 1;
+				}
+			}
+		}
+		addPercept(agName, p);
+		return 0;//No dirty, 0 is false
+	}
 
 	private int getDirtInAgentZone(String agName) 
 	{
