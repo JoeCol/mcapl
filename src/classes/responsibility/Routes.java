@@ -100,5 +100,36 @@ public class Routes
 		}
 		return new Pair<Integer, Integer>(x, y);
 	}
+	
+	public Pair<Integer, Integer> nextSquareToZone(WorldCell[][] world, int currX, int currY, int destX, int destY)
+	{
+		tmpWorld = world;
+		//arrays are stored y, x
+		int[][] costs = new int[world.length][world[0].length];
+		for (int[] rows : costs)
+		{
+			Arrays.fill(rows, Integer.MAX_VALUE);
+		}
+		costs[destY][destX] = 1;
+		HashMap<Pair<Integer,Integer>, Boolean> checked = new HashMap<Pair<Integer,Integer>, Boolean>();
+		checked.put(new Pair<Integer, Integer>(destX,destY), true);
+		costs = fillSurrounding(costs, new Pair<Integer, Integer>(destX, destY), checked);
+		
+		return getMinLocation(costs, currX, currY);
+	}
+	
+	public static Pair<Integer, Integer> getMinLocation(int[][] costs, int cx, int cy) {
+        for (int x = -1; x < 2; x++)
+        {
+        	for (int y = -1; y < 2; y++)
+            {
+            	if (costs[cy][cx] > costs[cy + y][cx + x])//Must have surrounding wall in map, if less than heading towards destination
+            	{
+            		return new Pair<Integer,Integer>(cx + x,cy + y);//At cx, cy
+            	}
+            }
+        }
+        return new Pair<Integer,Integer>(cx,cy);//At cx, cy
+    }
 
 }

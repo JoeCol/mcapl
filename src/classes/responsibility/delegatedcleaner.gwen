@@ -6,21 +6,17 @@ GWENDOLEN
 //Cleaning Responsibility Tree
 node(clean,[patrol,no_dirt])
 node(patrol,[patrol_1,patrol_2,patrol_3,patrol_4,patrol_5])
-node(no_dirt,[no_dirt_1,no_dirt_2,no_dirt_3,no_dirt_4,no_dirt_5])
+node(no_dirt,[dirt_1,dirt_2,dirt_3,dirt_4,dirt_5])
 
 //Current Responsibilities
 currentRes([clean])
-currentItem(0)
-
-//Initially believe that there is no dirt
-bNo_dirt_1
-bNo_dirt_2
-bNo_dirt_3
-bNo_dirt_4
-bNo_dirt_5
 
 :Reasoning Rules:
-bNo_dirt :- bNo_dirt_1,bNo_dirt_2,bNo_dirt_3,bNo_dirt_4,bNo_dirt_5;
+dirt :- dirt_1;
+dirt :- dirt_2;
+dirt :- dirt_3;
+dirt :- dirt_4;
+dirt :- dirt_5;
 
 :Initial Goals:
 doRes[achieve]
@@ -40,30 +36,44 @@ doRes[achieve]
 +!resolveRes(patrol_4)[perform] : {B at(X,Y), B zone(4)} <- observeDirt;
 +!resolveRes(patrol_5)[perform] : {B at(X,Y), B zone(5)} <- observeDirt;
 
-+!resolveRes(patrol_1)[perform] : {B at(X,Y)} <- go_to_zone(X,Y,1), +!resolveRes(patrol_1)[perform];
-+!resolveRes(patrol_2)[perform] : {B at(X,Y)} <- go_to_zone(X,Y,2), +!resolveRes(patrol_2)[perform];
-+!resolveRes(patrol_3)[perform] : {B at(X,Y)} <- go_to_zone(X,Y,3), +!resolveRes(patrol_3)[perform];
-+!resolveRes(patrol_4)[perform] : {B at(X,Y)} <- go_to_zone(X,Y,4), +!resolveRes(patrol_4)[perform];
-+!resolveRes(patrol_5)[perform] : {B at(X,Y)} <- go_to_zone(X,Y,5), +!resolveRes(patrol_5)[perform];
-
++!resolveRes(patrol_1)[perform] : {B at(X,Y)} <- go_to_zone(1,X,Y), +!resolveRes(patrol_1)[perform];
++!resolveRes(patrol_2)[perform] : {B at(X,Y)} <- go_to_zone(2,X,Y), +!resolveRes(patrol_2)[perform];
++!resolveRes(patrol_3)[perform] : {B at(X,Y)} <- go_to_zone(3,X,Y), +!resolveRes(patrol_3)[perform];
++!resolveRes(patrol_4)[perform] : {B at(X,Y)} <- go_to_zone(4,X,Y), +!resolveRes(patrol_4)[perform];
++!resolveRes(patrol_5)[perform] : {B at(X,Y)} <- go_to_zone(5,X,Y), +!resolveRes(patrol_5)[perform];
 
 //Dirt Responsibility
-+!resolveRes(no_dirt)[perform] : {B bNo_dirt, B currentRes(Z), B node(no_dirt,X)} <- -currentRes(Z), removeList(Z, X, N), +currentRes(N);
-+!resolveRes(no_dirt)[perform] : {~B bNo_dirt, B currentRes(Z), B node(no_dirt,X)} <- -currentRes(Z), appendList(Z, X, N), +currentRes(N);
++!resolveRes(no_dirt)[perform] : {~B dirt, B currentRes(Z), B node(no_dirt,X)} <- print(remove), -currentRes(Z), removeList(Z, X, N), +currentRes(N);
++!resolveRes(no_dirt)[perform] : {B dirt, B currentRes(Z), B node(no_dirt,X)} <- print(adding), -currentRes(Z), appendList(Z, X, N), +currentRes(N);
 
 //Specific dirt responsibilities - should remove from active responsibilities when done
-+!resolveRes(dirt_1)[perform] : {B at(X,Y)} <- go_to_zone(X,Y,1), +!resolveRes(dirt_1)[perform];
-+!resolveRes(dirt_1)[perform] : {B at(X,Y), B zone(1)} <- observeDirt;
-+!resolveRes(dirt_2)[perform] : {B at(X,Y)} <- go_to_zone(X,Y,2), +!resolveRes(dirt_2)[perform];
-+!resolveRes(dirt_2)[perform] : {B at(X,Y), B zone(2)} <- observeDirt;
-+!resolveRes(dirt_3)[perform] : {B at(X,Y)} <- go_to_zone(X,Y,3), +!resolveRes(dirt_3)[perform];
-+!resolveRes(dirt_3)[perform] : {B at(X,Y), B zone(3)} <- observeDirt;
-+!resolveRes(dirt_4)[perform] : {B at(X,Y)} <- go_to_zone(X,Y,4), +!resolveRes(dirt_4)[perform];
-+!resolveRes(dirt_4)[perform] : {B at(X,Y), B zone(4)} <- observeDirt;
-+!resolveRes(dirt_5)[perform] : {B at(X,Y)} <- go_to_zone(X,Y,5), +!resolveRes(dirt_5)[perform];
-+!resolveRes(dirt_5)[perform] : {B at(X,Y), B zone(5)} <- observeDirt;
++!resolveRes(dirt_1)[perform] : {B finish(1,1)} <- -finish(1,1), print(done);
++!resolveRes(dirt_1)[perform] : {B observed1, B dirt_1, B at(X,Y)} <- do_clean(1,X,Y,N), +finish(1,N), +!resolveRes(dirt_1)[perform];
++!resolveRes(dirt_1)[perform] : {B observed1, ~B dirt_1} <- +finish(1,1), +!resolveRes(dirt_1)[perform];
++!resolveRes(dirt_1)[perform] : {~B observed1, B zone(1)} <- +observed1, observeDirt, +!resolveRes(dirt_1)[perform];
++!resolveRes(dirt_1)[perform] : {~B observed1, ~B zone(1), B at(X,Y)} <- go_to_zone(1,X,Y), +!resolveRes(dirt_1)[perform];
+
++!resolveRes(dirt_2)[perform] : {B finish(2,1)} <- -finish(2,1), print(done);
++!resolveRes(dirt_2)[perform] : {B observed2, B dirt_2, B at(X,Y)} <- do_clean(2,X,Y,N), +finish(2,N), +!resolveRes(dirt_2)[perform];
++!resolveRes(dirt_2)[perform] : {~B observed2, B zone(2)} <- +observed2, observeDirt, +!resolveRes(dirt_2)[perform];
++!resolveRes(dirt_2)[perform] : {~B observed2, ~B zone(2), B at(X,Y)} <- go_to_zone(2,X,Y), +!resolveRes(dirt_2)[perform];
+
++!resolveRes(dirt_3)[perform] : {B finish(3,1)} <- -finish(3,1), print(done);
++!resolveRes(dirt_3)[perform] : {B observed3, B dirt_3, B at(X,Y)} <- do_clean(3,X,Y,N), +finish(3,N), +!resolveRes(dirt_3)[perform];
++!resolveRes(dirt_3)[perform] : {~B observed3, B zone(3)} <- +observed3, observeDirt, +!resolveRes(dirt_3)[perform];
++!resolveRes(dirt_3)[perform] : {~B observed3, ~B zone(3), B at(X,Y)} <- go_to_zone(3,X,Y), +!resolveRes(dirt_3)[perform];
+
++!resolveRes(dirt_4)[perform] : {B finish(4,1)} <- -finish(4,1), print(done);
++!resolveRes(dirt_4)[perform] : {B observed4, B dirt_4, B at(X,Y)} <- do_clean(4,X,Y,N), +finish(4,N), +!resolveRes(dirt_4)[perform];
++!resolveRes(dirt_4)[perform] : {~B observed4, B zone(4)} <- +observed4, observeDirt, +!resolveRes(dirt_4)[perform];
++!resolveRes(dirt_4)[perform] : {~B observed4, ~B zone(4), B at(X,Y)} <- go_to_zone(4,X,Y), +!resolveRes(dirt_4)[perform];
+
++!resolveRes(dirt_5)[perform] : {B finish(5,1)} <- -finish(5,1), print(done);
++!resolveRes(dirt_5)[perform] : {B observed5, B dirt_5, B at(X,Y)} <- do_clean(5,X,Y,N), +finish(5,N), +!resolveRes(dirt_5)[perform];
++!resolveRes(dirt_5)[perform] : {~B observed5, B zone(5)} <- +observed5, observeDirt, +!resolveRes(dirt_5)[perform];
++!resolveRes(dirt_5)[perform] : {~B observed5, ~B zone(5), B at(X,Y)} <- go_to_zone(5,X,Y), +!resolveRes(dirt_5)[perform];
 
 //Iterate list, get updated belief
-+!iterateRes[perform] : {B currentRes(Res)} <- -currentRes(Res), iterateRes(Res,X), +currentRes(X), print(Res);
++!iterateRes[perform] : {B currentRes(Res)} <- -currentRes(Res), iterateRes(Res,X), +currentRes(X);
 //Traverse Responsibilities, iterate through list
-+!doRes[achieve] : {B currentRes([H|T]), B currentRes(Res)} <- print(H), print(Res), +!resolveRes(H)[perform], +!iterateRes[perform]; 
++!doRes[achieve] : {B currentRes([H|T]), B currentRes(Res)} <- print(H), +!resolveRes(H)[perform], +!iterateRes[perform]; 

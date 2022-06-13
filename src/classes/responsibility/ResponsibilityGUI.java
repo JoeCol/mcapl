@@ -145,12 +145,14 @@ public class ResponsibilityGUI {
 		panel.add(lblNewLabel);
 		
 		JSlider slider = new JSlider();
+		slider.setMinimum(300);
+		slider.setMaximum(3000);
 		slider.addChangeListener(new ChangeListener() {
 			public void stateChanged(ChangeEvent e) {
 				cwt.setSimulationDelay(slider.getValue());
 			}
 		});
-		slider.setMajorTickSpacing(10);
+		slider.setMajorTickSpacing(200);
 		slider.setSnapToTicks(true);
 		slider.setPaintTicks(true);
 		slider.setValue(0);
