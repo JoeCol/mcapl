@@ -8,11 +8,14 @@ import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.ObjectInputStream;
+import java.time.LocalDateTime;
+import java.util.Date;
 import java.util.Iterator;
 import java.awt.Graphics;
 import java.awt.Color;
 import java.awt.Frame;
 
+import javax.print.attribute.standard.DateTimeAtCompleted;
 import javax.swing.JPanel;
 import javax.swing.Timer;
 
@@ -33,67 +36,24 @@ public class CleaningWorldThread extends JPanel implements Runnable
 	private String configfile;
 	private MCAPLcontroller mccontrol;
 	private MAS mas;
-	private int simulationDelay;
-	private Timer envUpdate;
-	Settings currentSettings;
-	File settingsFile = new File("cleaning.settings");
 	
-	public void loadSettings()
-	{
-		if (settingsFile.exists())
-		{
-			ObjectInputStream is;
-			try {
-				is = new ObjectInputStream(new FileInputStream(settingsFile));
-				currentSettings = (Settings)is.readObject();
-			} catch (FileNotFoundException e) {
-				// TODO Auto-generated catch block
-				e.printStackTrace();
-			} catch (IOException e) {
-				// TODO Auto-generated catch block
-				e.printStackTrace();
-			} catch (ClassNotFoundException e) {
-				// TODO Auto-generated catch block
-				e.printStackTrace();
-			}
-			
-		}
-	}
-	
-	public Settings getSettings()
-	{
-		return currentSettings;
-	}
-	
-	
+	private int startingDelay;
 	@Override
 	public void run() {
-		loadSettings();
-		world = new CleaningWorld(currentSettings);
-		setLayout(new GridLayout(world.getHeight(), world.getWidth(), 0, 0));
 		
-		ActionListener updateWorld = new ActionListener()
+		world = new CleaningWorld();
+		world.setSimulationDelay(startingDelay);
+		setLayout(new GridLayout(world.getHeight(), world.getWidth(), 0, 0));
+		world.addWorldListeners(new UpdateToWorld()
 		{
 			@Override
-			public void actionPerformed(ActionEvent e) {
-				//Add Dirt
-				for (int x = 0; x < world.getWidth(); x++)
-				{
-					for (int y = 0; y < world.getHeight(); y++)
-					{
-						world.getCell(x, y).setChangeOfDirt(currentSettings.getDirtAppearanceChange());
-					}
-				}
-				//Process Actions
-				
-				//Send Responses
-				
+			public void worldUpdate() {
 				//Refresh Screen
 				invalidate();
 				repaint();
 			}
-		};
-		envUpdate = new Timer(simulationDelay, updateWorld);
+	
+		});
 		
 		GroundPredSets.clear();
 		AILConfig config = new AILConfig(configfile);
@@ -107,7 +67,6 @@ public class CleaningWorldThread extends JPanel implements Runnable
 		System.out.println(mccontrol.getScheduler().toString());
 		
 		// Begin!
-		envUpdate.start();
 		mccontrol.begin(); 
 		mas.cleanup();
 	}
@@ -152,8 +111,9 @@ public class CleaningWorldThread extends JPanel implements Runnable
 		return mas;
 	}
 	
-	public CleaningWorldThread(String config)
+	public CleaningWorldThread(String config, int delay)
 	{
+		startingDelay = delay;
 		configfile = config;
 		setDoubleBuffered(true);
 		//Grid Layout goes for y number of rows, then x number of columns
@@ -225,16 +185,11 @@ public class CleaningWorldThread extends JPanel implements Runnable
 
 	public void sendStop() 
 	{
-		envUpdate.stop();
 		mccontrol.stop();		
 	}
 
 	public void setSimulationDelay(int value) 
 	{
-		simulationDelay = value;
-		if (world != null)
-		{
-			world.setSimulationDelay(value);
-		}
+		world.setSimulationDelay(value);
 	}
 }

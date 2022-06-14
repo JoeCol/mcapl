@@ -34,7 +34,7 @@ public class ResponsibilityGUI {
 	private JFrame frmResponsibilityGwen;
 	private Thread cwtThread;
 	//private CleaningWorldThread cwt = new CleaningWorldThread("/src/classes/responsibility/responsibility.ail");
-	private CleaningWorldThread cwt = new CleaningWorldThread("/src/classes/responsibility/test.ail");
+	private CleaningWorldThread cwt = new CleaningWorldThread("/src/classes/responsibility/test.ail",300);
 	private boolean started = false;
 	private File settingsFile = new File("cleaning.settings");
 

@@ -9,12 +9,12 @@ import java.io.FileReader;
 import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Random;
-import java.util.Set;
 import java.util.Stack;
+import java.util.Timer;
+import java.util.TimerTask;
 
 import ail.mas.DefaultEnvironment;
 import ail.mas.scheduling.RoundRobinScheduler;
@@ -25,15 +25,11 @@ import ail.syntax.ListTermImpl;
 import ail.syntax.Literal;
 import ail.syntax.NumberTerm;
 import ail.syntax.NumberTermImpl;
-import ail.syntax.Plan;
 import ail.syntax.Predicate;
-import ail.syntax.StringTerm;
 import ail.syntax.Term;
 import ail.syntax.Unifier;
 import ail.util.AILexception;
 import ajpf.MCAPLJobber;
-import ajpf.psl.MCAPLNumberTermImpl;
-import ajpf.psl.MCAPLTerm;
 import gov.nasa.jpf.util.Pair;
 
 interface UpdateToWorld{
@@ -43,9 +39,13 @@ interface UpdateToWorld{
 public class CleaningWorld extends DefaultEnvironment implements MCAPLJobber
 {
 	enum CleaningStatus {cs_notcleaning, cs_move, cs_clean, cs_done};
+	enum AgentAction {aa_moveup, aa_movedown, aa_moveright, aa_moveleft, aa_clean, aa_observedirt}
 	
 	Routes routeToZones;
 	WorldCell[][] world;
+	int simulationDelay;
+	Timer environmentTimer = new Timer();
+	Settings currentSettings;
 	RoundRobinScheduler rrs = new RoundRobinScheduler();
 	ArrayList<UpdateToWorld> listeners = new ArrayList<UpdateToWorld>();
 	HashMap<String, Color> agentColours = new HashMap<String, Color>();
@@ -54,7 +54,37 @@ public class CleaningWorld extends DefaultEnvironment implements MCAPLJobber
 	
 	HashMap<String, Stack<Pair<Integer, Integer>>> agentSquToClean = new HashMap<String, Stack<Pair<Integer, Integer>>>();
 	
+	HashMap<String, Stack<AgentAction>> agentActions = new HashMap<String, Stack<AgentAction>>();
+	
 	Random r = new Random();
+	File settingsFile = new File("cleaning.settings");
+	
+	public void loadSettings()
+	{
+		if (settingsFile.exists())
+		{
+			ObjectInputStream is;
+			try {
+				is = new ObjectInputStream(new FileInputStream(settingsFile));
+				currentSettings = (Settings)is.readObject();
+			} catch (FileNotFoundException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			} catch (IOException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			} catch (ClassNotFoundException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			}
+			
+		}
+	}
+	
+	public Settings getSettings()
+	{
+		return currentSettings;
+	}
 	
 	public void addWorldListeners(UpdateToWorld u)
 	{
@@ -84,12 +114,59 @@ public class CleaningWorld extends DefaultEnvironment implements MCAPLJobber
 			
 			agentColours.put(a.getAgName(), new Color(r.nextInt(0xFFFFFF)));
 			agentCleaningStatus.put(a.getAgName(), CleaningStatus.cs_notcleaning);
+			agentActions.put(a.getAgName(), new Stack<AgentAction>());
 		}
+		
+		environmentTimer.scheduleAtFixedRate(new TimerTask()
+		{
+			//method to run through thread, delay is caused by timer
+			public void run()
+			{
+				//Each action to the environment gives a change at dirt.
+				for (int x = 0; x < world.length; x++)
+				{
+					for (int y = 0; y < world[x].length; y++)
+					{
+						world[x][y].setChangeOfDirt(currentSettings.getDirtAppearanceChange());
+					}
+				}
+				
+				//Get ONE action from each agent
+				for (AILAgent a : getAgents())
+				{
+					Stack<AgentAction> actionStack = agentActions.get(a.getAgName());
+					AgentAction action = actionStack.pop();
+					Pair<Integer, Integer> agentLocation = getAgentLocation(a.getAgName());
+					switch (action)
+					{
+					case aa_clean:
+						clean(agentLocation._1, agentLocation._2);
+						break;
+					case aa_movedown:
+						moveAgent(a.getAgName(), agentLocation._1, agentLocation._2, agentLocation._1, agentLocation._2 + 1);
+						break;
+					case aa_moveleft:
+						moveAgent(a.getAgName(), agentLocation._1, agentLocation._2, agentLocation._1 - 1, agentLocation._2);
+						break;
+					case aa_moveright:
+						moveAgent(a.getAgName(), agentLocation._1, agentLocation._2, agentLocation._1 + 1, agentLocation._2);
+						break;
+					case aa_moveup:
+						moveAgent(a.getAgName(), agentLocation._1, agentLocation._2, agentLocation._1, agentLocation._2 - 1);
+						break;
+					case aa_observedirt:
+						observeDirt(a.getAgName());
+						break;
+					}
+				}
+			}
+		}, 0, simulationDelay);
 		
 	}
 
-	public CleaningWorld(Settings currentSettings)
+	public CleaningWorld()
 	{
+		loadSettings();
 		try
 		{
 			zoneStart.clear();
@@ -185,24 +262,11 @@ public class CleaningWorld extends DefaultEnvironment implements MCAPLJobber
 	   		case "observeDirt":
 	   			observeDirt(agName);
 	   			break;
-	   		case "random_move":
-	   			randomlyMoveAgent(agName, (int)((NumberTerm)act.getTerm(0)).solve(), (int)((NumberTerm)act.getTerm(1)).solve());
-	   			break;
 	   		case "do_clean":
-	   			CleaningStatus cs = clean(agName, (int)((NumberTerm)act.getTerm(0)).solve(), (int)((NumberTerm)act.getTerm(1)).solve(), (int)((NumberTerm)act.getTerm(2)).solve());
-	   			NumberTerm cleaningNT;
-	   			if (cs == CleaningStatus.cs_done)
-	   			{
-	   				cleaningNT = new NumberTermImpl(1);
-	   			}
-	   			else
-	   			{
-	   				cleaningNT = new NumberTermImpl(0);
-	   			}
-	   			cleaningNT.unifies(act.getTerm(3), theta);
+	   			//TODO add list of clean and move items
 	   			break;
 	   		case "go_to_zone":
-	   			goToZone(agName, (int)((NumberTerm)act.getTerm(0)).solve(), (int)((NumberTerm)act.getTerm(1)).solve(), (int)((NumberTerm)act.getTerm(2)).solve());
+	   			goToZone(agName, (int)((NumberTerm)act.getTerm(0)).solve());
 	   			break;
 	   		case "getRandomZone":
 	   			NumberTerm n = new NumberTermImpl(1 + r.nextInt(zoneStart.keySet().size()));
@@ -258,7 +322,7 @@ public class CleaningWorld extends DefaultEnvironment implements MCAPLJobber
 	}
 
 
-	private void goToZone(String agName, int zone, int x, int y) 
+	private void goToZone(String agName, int zone) 
 	{
 		int newx = routeToZones.toZone(zone, x, y)._1;
 		int newy = routeToZones.toZone(zone, x, y)._2;
@@ -371,6 +435,8 @@ public class CleaningWorld extends DefaultEnvironment implements MCAPLJobber
 		
 		
 	}
+	
+	
 
 	@Override
 	public int compareTo(MCAPLJobber o) 
@@ -381,7 +447,11 @@ public class CleaningWorld extends DefaultEnvironment implements MCAPLJobber
 	@Override
 	public void do_job() 
 	{
-		
+		//Update GUI
+		for (UpdateToWorld u : listeners)
+		{
+			u.worldUpdate();
+		}
 	}
 
 	@Override
@@ -414,5 +484,11 @@ public class CleaningWorld extends DefaultEnvironment implements MCAPLJobber
 	public Color getAgentColor(AILAgent ag) 
 	{
 		return agentColours.get(ag.getAgName());
+	}
+
+
+	public void setSimulationDelay(int value) 
+	{
+		simulationDelay = value;
 	}
 }
