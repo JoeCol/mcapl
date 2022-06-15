@@ -30,17 +30,11 @@ doRes[achieve]
 +!resolveRes(patrol)[perform] : {B currentRes(Z), B node(patrol, X)} <- +.lock, -currentRes(Z), appendList(Z, X, N), +currentRes(N), -.lock;
 
 //at location
-+!resolveRes(patrol_1)[perform] : {B at(X,Y), B zone(1)} <- observeDirt;
-+!resolveRes(patrol_2)[perform] : {B at(X,Y), B zone(2)} <- observeDirt;
-+!resolveRes(patrol_3)[perform] : {B at(X,Y), B zone(3)} <- observeDirt;
-+!resolveRes(patrol_4)[perform] : {B at(X,Y), B zone(4)} <- observeDirt;
-+!resolveRes(patrol_5)[perform] : {B at(X,Y), B zone(5)} <- observeDirt;
-
-+!resolveRes(patrol_1)[perform] : {B at(X,Y)} <- go_to_zone(1,X,Y), +!resolveRes(patrol_1)[perform];
-+!resolveRes(patrol_2)[perform] : {B at(X,Y)} <- go_to_zone(2,X,Y), +!resolveRes(patrol_2)[perform];
-+!resolveRes(patrol_3)[perform] : {B at(X,Y)} <- go_to_zone(3,X,Y), +!resolveRes(patrol_3)[perform];
-+!resolveRes(patrol_4)[perform] : {B at(X,Y)} <- go_to_zone(4,X,Y), +!resolveRes(patrol_4)[perform];
-+!resolveRes(patrol_5)[perform] : {B at(X,Y)} <- go_to_zone(5,X,Y), +!resolveRes(patrol_5)[perform];
++!resolveRes(patrol_1)[perform] : {B at(X,Y)} <- go_to_zone(1), *zone(1), observeDirt, *observed, removeObserved;
++!resolveRes(patrol_2)[perform] : {B at(X,Y)} <- go_to_zone(2), *zone(2), observeDirt, *observed, removeObserved;
++!resolveRes(patrol_3)[perform] : {B at(X,Y)} <- go_to_zone(3), *zone(3), observeDirt, *observed, removeObserved;
++!resolveRes(patrol_4)[perform] : {B at(X,Y)} <- go_to_zone(4), *zone(4), observeDirt, *observed, removeObserved;
++!resolveRes(patrol_5)[perform] : {B at(X,Y)} <- go_to_zone(5), *zone(5), observeDirt, *observed, removeObserved;
 
 //Dirt Responsibility
 +!resolveRes(no_dirt)[perform] : {~B dirt, B currentRes(Z), B node(no_dirt,X)} <- print(remove), -currentRes(Z), removeList(Z, X, N), +currentRes(N);

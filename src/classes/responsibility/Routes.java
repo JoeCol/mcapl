@@ -1,40 +1,29 @@
 package responsibility;
 
+import java.util.ArrayDeque;
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.HashMap;
+import java.util.Stack;
 
 import gov.nasa.jpf.util.Pair;
+import responsibility.CleaningWorld.AgentAction;
 
 /*
  *  Precalculates best route to zone start
  */
 public class Routes
 {
-
-	HashMap<Integer, int[][]> costsForZones = new HashMap<Integer, int[][]>();
-	WorldCell[][] tmpWorld;
-	
-	public Routes(WorldCell[][] world, HashMap<Integer, Pair<Integer, Integer>> zoneStart) 
+	public static boolean samePair(Pair<Integer,Integer> a, Pair<Integer, Integer> b)
 	{
-		tmpWorld = world;
-		zoneStart.forEach((zone, startLocation) -> 
+		if (a._1 == b._1 && a._2 == b._2)
 		{
-			//arrays are stored y, x
-			int[][] costs = new int[world.length][world[0].length];
-			for (int[] rows : costs)
-			{
-				Arrays.fill(rows, Integer.MAX_VALUE);
-			}
-			costs[startLocation._2][startLocation._1] = 1;
-			HashMap<Pair<Integer,Integer>, Boolean> checked = new HashMap<Pair<Integer,Integer>, Boolean>();
-			checked.put(new Pair<Integer, Integer>(startLocation._1,startLocation._2), true);
-			costs = fillSurrounding(costs, startLocation, checked);
-			
-			costsForZones.put(zone, costs);
-		});
+			return true;
+		}
+		return false;
 	}
-
-	private int[][] fillSurrounding(int[][] costs, Pair<Integer, Integer> startLocation, HashMap<Pair<Integer, Integer>, Boolean> checked) 
+	
+	private int[][] fillSurrounding(WorldCell[][] tmpWorld, int[][] costs, Pair<Integer, Integer> startLocation, HashMap<Pair<Integer, Integer>, Boolean> checked) 
 	{
 		boolean done = false;
 		while (!done)
@@ -75,35 +64,13 @@ public class Routes
 				}
 			}
 		}
-		/*for (int[] rows : costs)
-		{
-			for (int cell : rows)
-			{
-				System.out.print(cell + ",");
-			}
-			System.out.println();
-		}*/
 		return costs;
 	}
 
-	public Pair<Integer, Integer> toZone(int zone, int x, int y) 
-	{
-		for (int newX = -1; newX < 2; newX++)
-		{
-			for (int newY = -1; newY < 2; newY++)
-			{
-				if (costsForZones.get(zone)[y][x] > costsForZones.get(zone)[y + newY][x + newX])
-				{
-					return new Pair<Integer, Integer>(x + newX, y + newY);
-				}
-			}
-		}
-		return new Pair<Integer, Integer>(x, y);
-	}
 	
-	public Pair<Integer, Integer> nextSquareToZone(WorldCell[][] world, int currX, int currY, int destX, int destY)
+	private int[][] generateCosts(WorldCell[][] world, int destX, int destY)
 	{
-		tmpWorld = world;
+		WorldCell[][] tmpWorld = world;
 		//arrays are stored y, x
 		int[][] costs = new int[world.length][world[0].length];
 		for (int[] rows : costs)
@@ -113,23 +80,94 @@ public class Routes
 		costs[destY][destX] = 1;
 		HashMap<Pair<Integer,Integer>, Boolean> checked = new HashMap<Pair<Integer,Integer>, Boolean>();
 		checked.put(new Pair<Integer, Integer>(destX,destY), true);
-		costs = fillSurrounding(costs, new Pair<Integer, Integer>(destX, destY), checked);
+		costs = fillSurrounding(world, costs, new Pair<Integer, Integer>(destX, destY), checked);
 		
-		return getMinLocation(costs, currX, currY);
+		/*for (int[] rows : costs)
+		{
+			for (int i : rows)
+			{
+				System.out.print(i + ",");
+			}
+			System.out.println();
+		}*/
+		return costs;
 	}
-	
-	public static Pair<Integer, Integer> getMinLocation(int[][] costs, int cx, int cy) {
-        for (int x = -1; x < 2; x++)
-        {
-        	for (int y = -1; y < 2; y++)
-            {
-            	if (costs[cy][cx] > costs[cy + y][cx + x])//Must have surrounding wall in map, if less than heading towards destination
-            	{
-            		return new Pair<Integer,Integer>(cx + x,cy + y);//At cx, cy
-            	}
-            }
-        }
-        return new Pair<Integer,Integer>(cx,cy);//At cx, cy
-    }
+
+	public ArrayDeque<AgentAction> actionsToZone(WorldCell[][] world, Pair<Integer, Integer> agentLocation, Pair<Integer, Integer> agentDestination) 
+	{
+		int[][] costs = generateCosts(world, agentDestination._1, agentDestination._2);
+		
+		Pair<Integer, Integer> travXY = agentLocation;
+		ArrayDeque<AgentAction> toRet = new ArrayDeque<AgentAction>();
+		
+		int[] costNext = new int[9];
+		int min = Integer.MAX_VALUE;
+		int minIndex = 0;
+		while (!samePair(travXY, agentDestination))
+		{
+			min = Integer.MAX_VALUE;
+			minIndex = 0;
+			//Get costs of surrounding squares Cost Array is Y X
+			costNext[0] = costs[travXY._2 - 1][travXY._1 - 1];//Top left
+			costNext[1] = costs[travXY._2 - 1][travXY._1];//Top middle
+			costNext[2] = costs[travXY._2 - 1][travXY._1 + 1];//Top right
+			costNext[3] = costs[travXY._2][travXY._1 - 1];//middle left
+			//costNext[4] = costs[travXY._1][travXY._2]; //Middle square
+			costNext[4] = costs[travXY._2][travXY._1 + 1]; //Middle right
+			costNext[5] = costs[travXY._2 + 1][travXY._1 - 1]; //bottom left square
+			costNext[6] = costs[travXY._2 + 1][travXY._1]; //bottom middle square;
+			costNext[7] = costs[travXY._2 + 1][travXY._1 + 1]; //bottom left square;
+			//Find minimum, and its index
+			for (int i = 0; i < 8; i++)
+			{
+				if (costNext[i] < min)
+				{
+					min = costNext[i];
+					minIndex = i;
+				}
+			}
+			//choose action
+			switch(minIndex)
+			{
+			case 0:
+				toRet.add(AgentAction.aa_moveupleft);
+				travXY = new Pair<Integer, Integer>(travXY._1 - 1, travXY._2 - 1);
+				break;
+			case 1:
+				toRet.add(AgentAction.aa_moveup);
+				travXY = new Pair<Integer, Integer>(travXY._1, travXY._2 - 1);
+				break;
+			case 2:
+				toRet.add(AgentAction.aa_moveupright);
+				travXY = new Pair<Integer, Integer>(travXY._1 + 1, travXY._2 - 1);
+				break;
+			case 3:
+				toRet.add(AgentAction.aa_moveleft);
+				travXY = new Pair<Integer, Integer>(travXY._1 - 1, travXY._2);
+				break;
+			/*case 4:
+				travXY = new Pair<Integer, Integer>(travXY._1, travXY._2);
+				break;*/
+			case 4:
+				toRet.add(AgentAction.aa_moveright);
+				travXY = new Pair<Integer, Integer>(travXY._1 + 1, travXY._2);
+				break;
+			case 5:
+				toRet.add(AgentAction.aa_movedownleft);
+				travXY = new Pair<Integer, Integer>(travXY._1 - 1, travXY._2 + 1);
+				break;
+			case 6:
+				toRet.add(AgentAction.aa_movedown);
+				travXY = new Pair<Integer, Integer>(travXY._1, travXY._2 + 1);
+				break;
+			case 7:
+				toRet.add(AgentAction.aa_movedownright);
+				travXY = new Pair<Integer, Integer>(travXY._1 + 1, travXY._2 + 1);
+				break;
+			}
+		}
+		
+		return toRet;
+	}
 
 }
