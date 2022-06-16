@@ -16,6 +16,7 @@ import java.util.Random;
 import java.util.Stack;
 import java.util.Timer;
 import java.util.TimerTask;
+import java.util.concurrent.ConcurrentLinkedQueue;
 
 import ail.mas.DefaultEnvironment;
 import ail.mas.scheduling.RoundRobinScheduler;
@@ -40,7 +41,8 @@ interface UpdateToWorld{
 public class CleaningWorld extends DefaultEnvironment implements MCAPLJobber
 {
 	public enum AgentAction {aa_moveup, aa_movedown, aa_moveright, aa_moveleft, aa_clean, aa_observedirt, aa_moveupleft, aa_moveupright, aa_movedownleft, aa_movedownright}
-	
+	public enum Process {p_nochanges, p_updatedPercept, p_updatePercept};
+	Process currentState = Process.p_nochanges;
 	Routes routeToZones = new Routes();
 	WorldCell[][] world;
 	int simulationDelay;
@@ -52,6 +54,9 @@ public class CleaningWorld extends DefaultEnvironment implements MCAPLJobber
 	HashMap<Integer, ArrayList<Pair<Integer, Integer>>> zoneSquares = new HashMap<Integer, ArrayList<Pair<Integer, Integer>>>();
 	
 	HashMap<String, ArrayDeque<AgentAction>> agentActions = new HashMap<String, ArrayDeque<AgentAction>>();
+	
+	ConcurrentLinkedQueue<Pair<String, Predicate>> perceptAdds = new ConcurrentLinkedQueue<Pair<String, Predicate>>();
+	ConcurrentLinkedQueue<Pair<String, Predicate>> perceptRems = new ConcurrentLinkedQueue<Pair<String, Predicate>>();
 	
 	Random r = new Random();
 	File settingsFile = new File("cleaning.settings");
@@ -168,6 +173,15 @@ public class CleaningWorld extends DefaultEnvironment implements MCAPLJobber
 							observeDirt(a.getAgName());
 							break;
 						}
+						//Update agent beliefs
+						//Get actions from environment thread
+						currentState = Process.p_updatePercept;
+						
+						while (!(currentState == Process.p_updatedPercept))
+						{
+							
+						}
+						currentState = Process.p_nochanges;
 					}
 				}
 			}
@@ -360,13 +374,14 @@ public class CleaningWorld extends DefaultEnvironment implements MCAPLJobber
 			{
 				if (cell.getZoneNumber() == zone && cell.hasDirt())
 				{
-					addPercept(agName, p);
+					perceptAdds.add(new Pair<String, Predicate>(agName, p));
+					perceptAdds.add(new Pair<String, Predicate>(agName, new Predicate("observed")));
 					return 1;
 				}
 			}
 		}
-		removePercept(agName, p);
-		addPercept(agName, new Predicate("observed"));
+		perceptRems.add(new Pair<String, Predicate>(agName, p));
+		perceptAdds.add(new Pair<String, Predicate>(agName, new Predicate("observed")));
 		return 0;//No dirty, 0 is false
 	}
 
@@ -398,25 +413,28 @@ public class CleaningWorld extends DefaultEnvironment implements MCAPLJobber
 			terms.add(new NumberTermImpl(y));
 			Predicate p = new Predicate("at");
 			p.setTerms(terms);
-			removePercept(agName, p);
+			perceptRems.add(new Pair<String, Predicate>(agName, p));
 			
 			//Set New at belief
-			terms.clear();
-			terms.add(new NumberTermImpl(newX));
-			terms.add(new NumberTermImpl(newY));
-			addPercept(agName, p);
+			Predicate pAt = new Predicate("at");
+			ArrayList<Term> termsAt = new ArrayList<Term>();
+			termsAt.clear();
+			termsAt.add(new NumberTermImpl(newX));
+			termsAt.add(new NumberTermImpl(newY));
+			pAt.setTerms(termsAt);
+			perceptAdds.add(new Pair<String, Predicate>(agName, pAt));
 			
 			//Update zone belief
 			ArrayList<Term> zoneTerms = new ArrayList<Term>();
 			zoneTerms.add(new NumberTermImpl(getCell(x,y).getZoneNumber()));
 			Predicate p1 = new Predicate("zone");
 			p1.setTerms(zoneTerms);
-			removePercept(agName, p1);
+			perceptRems.add(new Pair<String, Predicate>(agName, p1));
 			
 			zoneTerms.clear();
 			zoneTerms.add(new NumberTermImpl(getCell(newX, newY).getZoneNumber()));
 			p1.setTerms(zoneTerms);
-			addPercept(agName, p1);
+			perceptAdds.add(new Pair<String, Predicate>(agName, p1));
 			getCell(newX, newY).setOccupied(true);
 		}
 		
@@ -439,6 +457,21 @@ public class CleaningWorld extends DefaultEnvironment implements MCAPLJobber
 		{
 			u.worldUpdate();
 		}
+		if (currentState == Process.p_updatePercept)
+		{
+			while (!perceptRems.isEmpty())
+			{
+				Pair<String, Predicate> p = perceptRems.poll();
+				removePercept(p._1, p._2);
+			}
+			while (!perceptAdds.isEmpty())
+			{
+				Pair<String, Predicate> p = perceptAdds.poll();
+				addPercept(p._1, p._2);
+			}
+			currentState = Process.p_updatedPercept;
+		}
+	
 	}
 
 	@Override
@@ -465,6 +498,10 @@ public class CleaningWorld extends DefaultEnvironment implements MCAPLJobber
 
 	public WorldCell getCell(int x, int y) 
 	{
+		if (y == -1 || x == -1)
+		{
+			System.out.println("Out of bounds");
+		}
 		return world[y][x];
 	}
 
