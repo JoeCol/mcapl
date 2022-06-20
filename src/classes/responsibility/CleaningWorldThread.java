@@ -134,21 +134,23 @@ public class CleaningWorldThread extends JPanel implements Runnable
 			{
 				for (int y = 0; y < world.getHeight(); y++)
 				{
-					if (!world.getCell(x, y).hasDirt())
+					if (!world.getCell(x,y).isTraversable())// Wall
+					{
+						g.setColor(Color.BLACK);
+						g.fillRect(1+(x * widthOfCell), g.getFontMetrics().getHeight() + (y * heightOfCell), widthOfCell, heightOfCell);
+					}
+					else if (!world.getCell(x, y).hasDirt()) //No dirt
 					{
 						g.setColor(Color.lightGray);
 						g.fillRect(1+(x * widthOfCell), g.getFontMetrics().getHeight() + (y * heightOfCell), widthOfCell, heightOfCell);
-						g.setColor(Color.BLACK);
 					}
-					if (!world.getCell(x,y).isTraversable())
+					else //No dirt
 					{
+						g.setColor(Color.white);
 						g.fillRect(1+(x * widthOfCell), g.getFontMetrics().getHeight() + (y * heightOfCell), widthOfCell, heightOfCell);
 					}
-					else
-					{
-						g.drawRect(1+(x * widthOfCell), g.getFontMetrics().getHeight() + (y * heightOfCell), widthOfCell, heightOfCell);
-						g.drawString("Zone:" + world.getCell(x, y).getZoneNumber(), 2+(x * widthOfCell), (g.getFontMetrics().getHeight() * 2) + (y * heightOfCell));
-					}
+					g.setColor(Color.black);
+					g.drawString("("+ x + "," + y + ") Zone:" + world.getCell(x, y).getZoneNumber(), 2+(x * widthOfCell), (g.getFontMetrics().getHeight() * 2) + (y * heightOfCell));
 				}
 			}
 			

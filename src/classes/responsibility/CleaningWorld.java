@@ -40,11 +40,11 @@ interface UpdateToWorld{
 
 public class CleaningWorld extends DefaultEnvironment implements MCAPLJobber
 {
-	public enum AgentAction {aa_moveup, aa_movedown, aa_moveright, aa_moveleft, aa_clean, aa_observedirt, aa_moveupleft, aa_moveupright, aa_movedownleft, aa_movedownright}
+	public enum AgentAction {aa_moveup, aa_movedown, aa_moveright, aa_moveleft, aa_clean, aa_observedirt, aa_moveupleft, aa_moveupright, aa_movedownleft, aa_movedownright, aa_finishclean}
 	public enum Process {p_nochanges, p_updatedPercept, p_updatePercept};
-	Process currentState = Process.p_nochanges;
+	private volatile Process currentState = Process.p_nochanges;
 	Routes routeToZones = new Routes();
-	WorldCell[][] world;
+	volatile WorldCell[][] world;
 	int simulationDelay;
 	Timer environmentTimer = new Timer();
 	Settings currentSettings;
@@ -172,6 +172,9 @@ public class CleaningWorld extends DefaultEnvironment implements MCAPLJobber
 						case aa_observedirt:
 							observeDirt(a.getAgName());
 							break;
+						case aa_finishclean:
+							perceptAdds.add(new Pair<String, Predicate>(a.getAgName(), new Predicate("finished")));
+							break;
 						}
 						//Update agent beliefs
 						//Get actions from environment thread
@@ -204,11 +207,12 @@ public class CleaningWorld extends DefaultEnvironment implements MCAPLJobber
 					Literal l = it.next();
 					if (l.getFunctor().equals("at"))
 					{
-						return new Pair<Integer, Integer>((int)((NumberTerm)l.getTerm(1)).solve(),(int)((NumberTerm)l.getTerm(1)).solve());
+						return new Pair<Integer, Integer>((int)((NumberTerm)l.getTerm(0)).solve(),(int)((NumberTerm)l.getTerm(1)).solve());
 					}
 				}
 			}
 		}
+		System.out.println("Could not find agent location:" + agName);
 		return new Pair<Integer, Integer>(-1,-1);
 	}
 
@@ -318,6 +322,9 @@ public class CleaningWorld extends DefaultEnvironment implements MCAPLJobber
 	   		case "go_to_zone":
 	   			goToZone(agName, (int)((NumberTerm)act.getTerm(0)).solve());
 	   			break;
+	   		case "finishClean":
+	   			removePercept(agName, new Predicate("finished"));
+	   			break;
 	   		case "print":
 	   		case "send":
 	   		case "sum":
@@ -332,17 +339,21 @@ public class CleaningWorld extends DefaultEnvironment implements MCAPLJobber
 	
 	private void addCleaningActions(String agName, int zone) 
 	{
+		//Assumes correct starting place (i.e. go to zone is called first)
 		ArrayList<Pair<Integer, Integer>> allSquares = zoneSquares.get(zone);
-		Pair<Integer, Integer> prevSquare = getAgentLocation(agName);
+		Pair<Integer, Integer> prevSquare = allSquares.get(0);
 		Pair<Integer, Integer> nextSquare;
 		ArrayDeque<AgentAction> actions = new ArrayDeque<AgentAction>();
-		for (int i = 0; i < allSquares.size(); i++)
+		actions.add(AgentAction.aa_clean);
+		for (int i = 1; i < allSquares.size(); i++)
 		{
 			nextSquare = allSquares.get(i);
 			actions.addAll(routeToZones.actionsToZone(world, prevSquare, nextSquare));
 			actions.add(AgentAction.aa_clean);
+			prevSquare = nextSquare;
 			
 		}
+		actions.add(AgentAction.aa_finishclean);
 		agentActions.get(agName).addAll(actions);
 	}
 
@@ -431,10 +442,12 @@ public class CleaningWorld extends DefaultEnvironment implements MCAPLJobber
 			p1.setTerms(zoneTerms);
 			perceptRems.add(new Pair<String, Predicate>(agName, p1));
 			
-			zoneTerms.clear();
-			zoneTerms.add(new NumberTermImpl(getCell(newX, newY).getZoneNumber()));
-			p1.setTerms(zoneTerms);
-			perceptAdds.add(new Pair<String, Predicate>(agName, p1));
+			ArrayList<Term> zoneUpdateTerms = new ArrayList<Term>();
+			zoneUpdateTerms.add(new NumberTermImpl(getCell(newX, newY).getZoneNumber()));
+			Predicate up1 = new Predicate("zone");
+			up1.setTerms(zoneUpdateTerms);
+			up1.setTerms(zoneUpdateTerms);
+			perceptAdds.add(new Pair<String, Predicate>(agName, up1));
 			getCell(newX, newY).setOccupied(true);
 		}
 		
@@ -469,6 +482,7 @@ public class CleaningWorld extends DefaultEnvironment implements MCAPLJobber
 				Pair<String, Predicate> p = perceptAdds.poll();
 				addPercept(p._1, p._2);
 			}
+			this.notifyListeners();
 			currentState = Process.p_updatedPercept;
 		}
 	
@@ -498,9 +512,9 @@ public class CleaningWorld extends DefaultEnvironment implements MCAPLJobber
 
 	public WorldCell getCell(int x, int y) 
 	{
-		if (y == -1 || x == -1)
+		if (y == -1 || x == -1 || x >= world[0].length || y >= world.length)
 		{
-			System.out.println("Out of bounds");
+			System.out.println("Out of bounds (" + x + "," + y + ")");
 		}
 		return world[y][x];
 	}
