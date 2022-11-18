@@ -1,4 +1,4 @@
-package responsibility;
+package responsibility.BasicResponsibility;
 
 import java.awt.Color;
 import java.io.BufferedReader;
@@ -143,7 +143,7 @@ public class CleaningWorld extends DefaultEnvironment implements MCAPLJobber
 						switch (action)
 						{
 						case aa_clean:
-							clean(agentLocation._1, agentLocation._2);
+							clean(agentLocation._1, agentLocation._2); 
 							break;
 						case aa_movedown:
 							moveAgent(a.getAgName(), agentLocation._1, agentLocation._2, agentLocation._1, agentLocation._2 + 1);

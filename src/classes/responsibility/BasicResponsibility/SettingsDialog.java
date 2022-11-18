@@ -1,4 +1,4 @@
-package responsibility;
+package responsibility.BasicResponsibility;
 
 import java.awt.BorderLayout;
 import java.awt.FlowLayout;

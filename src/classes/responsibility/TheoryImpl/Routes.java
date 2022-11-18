@@ -1,4 +1,4 @@
-package responsibility;
+package responsibility.TheoryImpl;
 
 import java.util.ArrayDeque;
 import java.util.Arrays;
@@ -7,7 +7,7 @@ import java.util.HashMap;
 import java.util.Stack;
 
 import gov.nasa.jpf.util.Pair;
-import responsibility.CleaningWorld.AgentAction;
+import responsibility.TheoryImpl.CleaningWorld.AgentAction;
 
 /*
  *  Precalculates best route to zone start

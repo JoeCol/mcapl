@@ -1,0 +1,29 @@
+GWENDOLEN
+
+:name: manager
+
+:Initial Beliefs:
+//Possible Responsibilities
+
+//Current Responsibilities
+currentRes([clean])
+
+:Reasoning Rules:
+dirt :- dirt_1;
+dirt :- dirt_2;
+dirt :- dirt_3;
+dirt :- dirt_4;
+dirt :- dirt_5;
+
+getCared([H],H) :- !;
+getCared([H|T], R) :- getCared(T,R1), care(R1, RC), care(H, HC), (RC > HC), R = R1, !;
+getCared([H|T], R) :- getCared(T,_), R = H, !;
+
+:Initial Goals:
+processResponsibilities[perform]
+
+:Plans: 
+
++!processResponsibilities[perform] : {B unassignedResponsibility} <- assignResponsibility, processResponsibilities[perform];
++!processResponsibilities[perform] : {B haveResponsibility, B currentRes(Res), B getCared(Res, X)} <- +.lock, doOneActionForResponsibility(X), -.lock, processResponsibilities[perform];
++!processResponsibilities[perform] : {True} <- print("I have nothing to do"), processResponsibilities[perform]; 

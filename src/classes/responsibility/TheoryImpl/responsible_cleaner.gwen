@@ -1,0 +1,27 @@
+GWENDOLEN
+
+:name: res_cleaner
+
+:Initial Beliefs:
+
+responsibilities([clean(1),clean(4),clean(5)])
+
+:Reasoning Rules:
+have_responsibility(H,T,L) :- responsibilities([H|T]), responsibilities(L);  
+
+:Initial Goals:
+dores [achieve]
+
+:Plans: 
+
+//+!cleaning [achieve]: {B cleanRequest(Z), B zone(Z), B cleaned(Z)} <- +.lock, -cleanRequest(Z), finishCleaning(Z), -.lock;
+//+!cleaning [achieve]: {B cleanRequest(Z), B zone(Z), ~B cleaned(Z), B at(X,Y)} <- +.lock, do_clean(Z, X, Y), -.lock;
+//+!cleaning [achieve]: {B cleanRequest(Z), ~B zone(Z), B at(X,Y)} <- +.lock, go_to_zone(Z,X,Y), -.lock;
+
++!clean(Z) [perform] : {B cleaned(Z)} <- +.lock, print("Finished Cleaning"), finishCleaning(Z), -current(clean(Z)), -.lock;
++!clean(Z) [perform] : {B zone(Z), B at(X,Y)} <- print("Cleaning"), do_clean(Z, X, Y);
++!clean(Z) [perform] : {~B zone(Z), B at(X,Y)} <- print("Going to zone"), go_to_zone(Z, X, Y);
+
++!dores [achieve]: {B have_responsibility(H,T,L), B current(clean(Z))} <- +.lock, print("Doing Res"), +!clean(Z)[perform], -.lock;
++!dores [achieve]: {B have_responsibility(H,T,L)} <- +.lock, print("Have Responsibility"), -responsibilities(L), +responsibilities(T), print(H), +current(H), -.lock;
++!dores [achieve]: {~B have_responsibility(H,T,L)} <- +.lock, print("Finished"), +responsibilities([clean(1),clean(4),clean(5)]), -.lock;

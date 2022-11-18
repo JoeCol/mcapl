@@ -1,4 +1,4 @@
-package responsibility;
+package responsibility.TheoryImpl;
 
 import java.io.Serializable;
 
