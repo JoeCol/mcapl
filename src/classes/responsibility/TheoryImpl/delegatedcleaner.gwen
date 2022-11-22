@@ -6,7 +6,16 @@ GWENDOLEN
 //Possible Responsibilities
 
 //Current Responsibilities
-currentRes([clean])
+currentRes([report,clean,observe])
+currentNum([10,2,1])
+
+//care values
+care(clean,2)
+care(observe,1)
+care(report,10)
+
+//have responsibility
+haveResponsibility
 
 :Reasoning Rules:
 dirt :- dirt_1;
@@ -15,15 +24,22 @@ dirt :- dirt_3;
 dirt :- dirt_4;
 dirt :- dirt_5;
 
-getCared([H],H) :- !;
-getCared([H|T], R) :- getCared(T,R1), care(R1, RC), care(H, HC), (RC > HC), R = R1, !;
-getCared([H|T], R) :- getCared(T,_), R = H, !;
+getCared([H],H);
+getCared([H|T], R) :- getCared(T,R), care(R, RC), care(H, HC), [HC<RC];
+getCared([H|T], H) :- getCared(T,R), care(R, RC), care(H, HC), [RC<HC];
+
+getNum([H],H);
+getNum([H|T],N) :- getNum(T,N), [H<N];
+getNum([H|T],H) :- getNum(T,N), [N<H];
 
 :Initial Goals:
-processResponsibilities[perform]
+test[perform]
 
 :Plans: 
 
-+!processResponsibilities[perform] : {B unassignedResponsibility} <- assignResponsibility, processResponsibilities[perform];
-+!processResponsibilities[perform] : {B haveResponsibility, B currentRes(Res), B getCared(Res, X)} <- +.lock, doOneActionForResponsibility(X), -.lock, processResponsibilities[perform];
-+!processResponsibilities[perform] : {True} <- print("I have nothing to do"), processResponsibilities[perform]; 
++!test[perform] : {B haveResponsibility, B currentRes(Res), B getCared(Res, X)} <- print(X);
+
+//+!processResponsibilities[perform] : {B unassignedResponsibility} <- assignResponsibility, +!processResponsibilities[perform];
+//+!processResponsibilities[perform] : {B haveResponsibility, B currentRes(Res), B getCared(Res, X)} <- +.lock, doOneActionForResponsibility(X), -.lock, +!processResponsibilities[perform];
+//+!processResponsibilities[perform] : {B haveResponsibility, B currentNum(Res), B getNum(Res, X)} <- print(X), +!processResponsibilities[perform];
+//+!processResponsibilities[perform] : {True} <- print("I have nothing to do");

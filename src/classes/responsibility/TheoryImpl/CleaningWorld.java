@@ -45,7 +45,7 @@ public class CleaningWorld extends DefaultEnvironment implements MCAPLJobber
 	private volatile Process currentState = Process.p_nochanges;
 	Routes routeToZones = new Routes();
 	volatile WorldCell[][] world;
-	int simulationDelay;
+	int simulationDelay = 100;
 	Timer environmentTimer = new Timer();
 	Settings currentSettings;
 	RoundRobinScheduler rrs = new RoundRobinScheduler();

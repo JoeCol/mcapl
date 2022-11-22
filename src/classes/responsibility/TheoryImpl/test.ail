@@ -1,6 +1,6 @@
 env = responsibility.TheoryImpl.CleaningWorld
 
-log.warning
+log.fine
 
 mas.agent.1.name = agent1
 mas.agent.1.file = /src/classes/responsibility/TheoryImpl/delegatedcleaner.gwen
