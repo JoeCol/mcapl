@@ -3,19 +3,42 @@ GWENDOLEN
 :name: manager
 
 :Initial Beliefs:
-//Possible Responsibilities
+//Possible Tasks task(name, [goals/actions], [statesOfTheWorld])
+task(report, [reportToHuman], [])
+task(safety, [], [isSafe])
+task(clean, [clean1,clean2,clean3,clean4,clean5], [])
+task(observer, [observe1,observe2,observe3,observe4,observe5], [])
+ 
+//Possible Responsibilities res(name, [subres], task, [failres])
+res(report, [], report, [])
+res(safety, [clean, observe], safety, [report])
+res(clean, [], clean, [])
+res(observe, [], observer, []) 
 
 //Current Responsibilities
-currentRes([report,clean,observe])
-currentNum([10,2,1])
+currentRes([])
 
 //care values
 care(clean,2)
 care(observe,1)
 care(report,10)
 
-//have responsibility
-haveResponsibility
+//Capacity
+capacity(reportToHuman)
+capacity(safety)
+capacity(isSafe)
+capacity(clean1)
+capacity(clean2)
+capacity(clean3)
+capacity(clean4)
+capacity(clean5)
+capacity(observe1)
+capacity(observe2)
+capacity(observe3)
+capacity(observe4)
+capacity(observe5)
+
+//Assumptions for testing
 
 :Reasoning Rules:
 dirt :- dirt_1;
@@ -24,20 +47,29 @@ dirt :- dirt_3;
 dirt :- dirt_4;
 dirt :- dirt_5;
 
-getCared([H],H);
-getCared([H|T], R) :- getCared(T,R), care(R, RC), care(H, HC), [HC<RC];
-getCared([H|T], H) :- getCared(T,R), care(R, RC), care(H, HC), [RC<HC];
-
-getNum([H],H);
-getNum([H|T],N) :- getNum(T,N), [H<N];
-getNum([H|T],H) :- getNum(T,N), [N<H];
+getCared(L, Out) :- getCared3(L, Out, N);
+getCared3([], _, 0);
+getCared3([H|T], R, RC) :- getCared3(T, R, RC), care(H, HC), [HC<RC];
+getCared3([H|T], H, HC) :- getCared3(T, R, RC), care(H, HC), [RC<HC];
 
 :Initial Goals:
 test[perform]
 
 :Plans: 
 
-+!test[perform] : {B haveResponsibility, B currentRes(Res), B getCared(Res, X)} <- print(X);
+//Current Responsibility List Management
++!add(X)[perform] : {B currentRes(Z)} <- +.lock, -currentRes(Z), print(Z), print("Adding"), print(X), appendList(X,Z,Y), +currentRes(Y), -.lock;
++!rem(X)[perform] : {B currentRes(Z)} <- +.lock, -currentRes(Z), print(Z), print("Removing"), print(X), removeList(X,Z,Y), +currentRes(Y), -.lock;
+
+//Add Accepted Responsibility to list
++!addAcceptedRes(NewRes)[perform] : {B currentRes(Res), B res(NewRes, SubRes, _, _)} <- print("Accepting Responsibility"), +!add([NewRes])[perform];
+
+//Decide if to accept responsibility
++!incomingRes(Res)[perform] : {B capacity(Res)} <- print("Chose To Accept"), +!addAcceptedRes(Res)[perform];
++!incomingRes(Res)[perform] : {~B capacity(Res)} <- print("Chose To Not Accept"); //Should send message back
+
+//Responsibility Loop
++!test[perform] : {B currentRes(Res), B getCared(Res, X)} <- +.lock, doOneActionForResponsibility(X), -.lock, +!processResponsibilities[perform];
 
 //+!processResponsibilities[perform] : {B unassignedResponsibility} <- assignResponsibility, +!processResponsibilities[perform];
 //+!processResponsibilities[perform] : {B haveResponsibility, B currentRes(Res), B getCared(Res, X)} <- +.lock, doOneActionForResponsibility(X), -.lock, +!processResponsibilities[perform];
