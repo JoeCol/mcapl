@@ -7,16 +7,13 @@ GWENDOLEN
 task(report, [reportToHuman], [])
 task(safety, [], [isSafe])
 task(clean, [clean1,clean2,clean3,clean4,clean5], [])
-task(observer, [observe1,observe2,observe3,observe4,observe5], [])
+task(observer, [observe1,observe2,observe3,observe4,observe5], [allRoomsWillBeObserved])
  
 //Possible Responsibilities res(name, [subres], task, [failres])
 res(report, [], report, [])
 res(safety, [clean, observe], safety, [report])
 res(clean, [], clean, [])
 res(observe, [], observer, []) 
-
-//Current Responsibilities
-currentRes([])
 
 //care values
 care(clean,2)
@@ -38,6 +35,12 @@ capacity(observe3)
 capacity(observe4)
 capacity(observe5)
 
+//Current Responsibilities
+currentRes([])
+//Current Working Task
+currentTask(none)
+completedTasks([])
+
 //Assumptions for testing
 
 :Reasoning Rules:
@@ -57,9 +60,15 @@ test[perform]
 
 :Plans: 
 
+//Received a delegated responsibility
++.received(:tell, delegationX): {True} <- +!resolveRes[perform];
+
+//Delegate
++!delegate(X,Ags)[perform] : {True} <- .send(Ags,:tell,X);
+
 //Current Responsibility List Management
-+!add(X)[perform] : {B currentRes(Z)} <- +.lock, -currentRes(Z), print(Z), print("Adding"), print(X), appendList(X,Z,Y), +currentRes(Y), -.lock;
-+!rem(X)[perform] : {B currentRes(Z)} <- +.lock, -currentRes(Z), print(Z), print("Removing"), print(X), removeList(X,Z,Y), +currentRes(Y), -.lock;
++!add(X)[perform] : {B currentRes(Z)} <- +.lock, -currentRes(Z), print("Adding"), appendList(X,Z,Y), +currentRes(Y), -.lock;
++!rem(X)[perform] : {B currentRes(Z)} <- +.lock, -currentRes(Z), print("Removing"), removeList(X,Z,Y), +currentRes(Y), -.lock;
 
 //Add Accepted Responsibility to list
 +!addAcceptedRes(NewRes)[perform] : {B currentRes(Res), B res(NewRes, SubRes, _, _)} <- print("Accepting Responsibility"), +!add([NewRes])[perform];
@@ -68,8 +77,12 @@ test[perform]
 +!incomingRes(Res)[perform] : {B capacity(Res)} <- print("Chose To Accept"), +!addAcceptedRes(Res)[perform];
 +!incomingRes(Res)[perform] : {~B capacity(Res)} <- print("Chose To Not Accept"); //Should send message back
 
+//Check if res is fulfilled, remove if true and report back
++!checkIfFulfilled(Res)[perform] : {B finished(Res)} <- +!rem([Res])[perform], reportBack(Res);
++!checkIfFulfilled(Res)[perform] : {B failed(Res), B res(Res,_,_,FailRes)} <- +!rem([Res])[perform], reportBack(Res), +!incomingRes(FailRes)[perform];
+
 //Responsibility Loop
-+!test[perform] : {B currentRes(Res), B getCared(Res, X)} <- +.lock, doOneActionForResponsibility(X), -.lock, +!processResponsibilities[perform];
++!test[perform] : {B currentRes(Res), B getCared(Res, X)} <- +.lock, doOneActionForResponsibility(X), +!checkIfFulfilled(X)[perform], -.lock, +!test[perform];
 
 //+!processResponsibilities[perform] : {B unassignedResponsibility} <- assignResponsibility, +!processResponsibilities[perform];
 //+!processResponsibilities[perform] : {B haveResponsibility, B currentRes(Res), B getCared(Res, X)} <- +.lock, doOneActionForResponsibility(X), -.lock, +!processResponsibilities[perform];
