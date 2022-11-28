@@ -25,6 +25,7 @@ import ail.syntax.Action;
 import ail.syntax.ListTerm;
 import ail.syntax.ListTermImpl;
 import ail.syntax.Literal;
+import ail.syntax.Message;
 import ail.syntax.NumberTerm;
 import ail.syntax.NumberTermImpl;
 import ail.syntax.Predicate;
@@ -117,6 +118,14 @@ public class CleaningWorld extends DefaultEnvironment implements MCAPLJobber
 			agentColours.put(a.getAgName(), new Color(r.nextInt(0xFFFFFF)));
 			agentActions.put(a.getAgName(), new ArrayDeque<AgentAction>());
 		}
+		
+		//For Testing
+		Predicate msgPred = new Predicate("assignment");
+		ListTermImpl lt = new ListTermImpl();
+		lt.add(new Predicate("initial"));
+		msgPred.addTerm(lt);
+		msgPred.addTerm(new Predicate("safety"));
+		addMessage("agent1", new Message(1, "initial", "agent1", msgPred));
 		
 		environmentTimer.scheduleAtFixedRate(new TimerTask()
 		{
@@ -324,6 +333,67 @@ public class CleaningWorld extends DefaultEnvironment implements MCAPLJobber
 	   			break;
 	   		case "finishClean":
 	   			removePercept(agName, new Predicate("finished"));
+	   			break;
+	   		case "getCared":
+	   			ListTerm res = (ListTerm)act.getTerm(0);
+	   			Predicate caredMostRes = new Predicate();
+	   			int caredMostResV = 0;
+	   			AILAgent agent = getAgents().get(0);
+	   			for (int i = 0; i < getAgents().size(); i++)
+	   			{
+	   				agent = getAgents().get(i);
+	   				if (agent.getAgName().equals(agName))
+	   				{
+	   					break;
+	   				}
+	   			}
+	   			ArrayList<Literal> beliefs = agent.getBB().getAll();
+	   			int resValue = 0;
+	   			for (int i = 0; i < res.size(); i++)
+	   			{
+	   				Term cRes = res.get(i);
+	   				for (int j = 0; j < beliefs.size(); j++)
+	   				{
+	   					if (beliefs.get(j).fullstring().contains("care(" + cRes.toString()))
+	   					{
+	   						resValue = Integer.parseInt(beliefs.get(j).getTerm(1).toString());
+	   						break;
+	   					}
+	   				}
+	   				if (resValue > caredMostResV)
+	   				{
+	   					caredMostRes.setFunctor(cRes.toString());
+	   					caredMostResV = resValue;
+	   				}
+	   			}
+	   			caredMostRes.unifies(act.getTerm(1), theta);
+	   			break;
+	   		case "listContains": //TODO Implemented
+	   			Predicate p = new Predicate("no");
+	   			p.unifies(act.getTerm(2), theta);
+	   			break;
+	   		case "getNextInList":
+	   			ListTerm todo = (ListTerm)act.getTerm(0);
+	   			ListTerm done = (ListTerm)act.getTerm(1);
+	   			for (int i = 0; i < todo.size(); i++)
+	   			{
+	   				Term termToFind = todo.get(i);
+	   				boolean found = false;
+	   				for (int j = 0; j < done.size(); j++)
+	   				{
+	   					if (done.get(i).toString().equals(termToFind.toString()))
+	   					{
+	   						found = true;
+	   						break;
+	   					}
+	   				}
+	   				if (!found)
+	   				{
+	   					Predicate nextItem = new Predicate(termToFind.toString());
+	   					nextItem.unifies(act.getTerm(2), theta);
+	   					break;
+	   				}
+	   			}
 	   			break;
 	   		case "print":
 	   		case "send":

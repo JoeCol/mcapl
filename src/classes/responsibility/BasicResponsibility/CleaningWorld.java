@@ -25,6 +25,7 @@ import ail.syntax.Action;
 import ail.syntax.ListTerm;
 import ail.syntax.ListTermImpl;
 import ail.syntax.Literal;
+import ail.syntax.Message;
 import ail.syntax.NumberTerm;
 import ail.syntax.NumberTermImpl;
 import ail.syntax.Predicate;
