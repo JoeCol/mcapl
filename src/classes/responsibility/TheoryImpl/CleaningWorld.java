@@ -336,6 +336,7 @@ public class CleaningWorld extends DefaultEnvironment implements MCAPLJobber
 	   			break;
 	   		case "getCared":
 	   			ListTerm res = (ListTerm)act.getTerm(0);
+	   			ListTerm completedRes = (ListTerm)act.getTerm(2);
 	   			Predicate caredMostRes = new Predicate();
 	   			int caredMostResV = 0;
 	   			AILAgent agent = getAgents().get(0);
@@ -360,17 +361,13 @@ public class CleaningWorld extends DefaultEnvironment implements MCAPLJobber
 	   						break;
 	   					}
 	   				}
-	   				if (resValue > caredMostResV)
+	   				if (resValue > caredMostResV && !completedRes.contains(cRes))
 	   				{
 	   					caredMostRes.setFunctor(cRes.toString());
 	   					caredMostResV = resValue;
 	   				}
 	   			}
 	   			caredMostRes.unifies(act.getTerm(1), theta);
-	   			break;
-	   		case "listContains": //TODO Implemented
-	   			Predicate p = new Predicate("no");
-	   			p.unifies(act.getTerm(2), theta);
 	   			break;
 	   		case "getNextInList":
 	   			ListTerm todo = (ListTerm)act.getTerm(0);
@@ -394,6 +391,16 @@ public class CleaningWorld extends DefaultEnvironment implements MCAPLJobber
 	   					break;
 	   				}
 	   			}
+	   			break;
+	   		case "doneAll":
+	   			ListTerm todoList = (ListTerm)act.getTerm(0);
+	   			ListTerm doneList = (ListTerm)act.getTerm(1);
+	   			Predicate doneAll = new Predicate("false");
+	   			if (todoList.containsAll(doneList))
+	   			{
+	   				doneAll.setFunctor("true");
+	   			}
+	   			doneAll.unifies(act.getTerm(2), theta);
 	   			break;
 	   		case "print":
 	   		case "send":
