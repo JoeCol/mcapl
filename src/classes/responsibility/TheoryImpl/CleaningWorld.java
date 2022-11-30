@@ -378,7 +378,7 @@ public class CleaningWorld extends DefaultEnvironment implements MCAPLJobber
 	   				boolean found = false;
 	   				for (int j = 0; j < done.size(); j++)
 	   				{
-	   					if (done.get(i).toString().equals(termToFind.toString()))
+	   					if (done.get(j).toString().equals(termToFind.toString()))
 	   					{
 	   						found = true;
 	   						break;
@@ -396,11 +396,18 @@ public class CleaningWorld extends DefaultEnvironment implements MCAPLJobber
 	   			ListTerm todoList = (ListTerm)act.getTerm(0);
 	   			ListTerm doneList = (ListTerm)act.getTerm(1);
 	   			Predicate doneAll = new Predicate("false");
-	   			if (todoList.containsAll(doneList))
+	   			if (doneList.containsAll(todoList))
 	   			{
 	   				doneAll.setFunctor("true");
 	   			}
 	   			doneAll.unifies(act.getTerm(2), theta);
+	   			break;
+	   		case "prt":
+	   			for (int i = 0; i < act.getTermsSize(); i++)
+	   			{
+	   				System.out.print(act.getTerm(i).toString());
+	   			}
+	   			System.out.println();
 	   			break;
 	   		case "print":
 	   		case "send":
