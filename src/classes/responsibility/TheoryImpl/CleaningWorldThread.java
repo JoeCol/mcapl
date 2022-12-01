@@ -141,12 +141,12 @@ public class CleaningWorldThread extends JPanel implements Runnable
 					}
 					else if (!world.getCell(x, y).hasDirt()) //No dirt
 					{
-						g.setColor(Color.lightGray);
+						g.setColor(Color.white);
 						g.fillRect(1+(x * widthOfCell), g.getFontMetrics().getHeight() + (y * heightOfCell), widthOfCell, heightOfCell);
 					}
 					else //No dirt
 					{
-						g.setColor(Color.white);
+						g.setColor(Color.lightGray);
 						g.fillRect(1+(x * widthOfCell), g.getFontMetrics().getHeight() + (y * heightOfCell), widthOfCell, heightOfCell);
 					}
 					g.setColor(Color.black);

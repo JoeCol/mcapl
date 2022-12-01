@@ -55,9 +55,12 @@ public class CleaningWorld extends DefaultEnvironment implements MCAPLJobber
 	HashMap<Integer, ArrayList<Pair<Integer, Integer>>> zoneSquares = new HashMap<Integer, ArrayList<Pair<Integer, Integer>>>();
 	
 	HashMap<String, ArrayDeque<AgentAction>> agentActions = new HashMap<String, ArrayDeque<AgentAction>>();
+	HashMap<String, String> workingOn = new HashMap<String, String>();
 	
 	ConcurrentLinkedQueue<Pair<String, Predicate>> perceptAdds = new ConcurrentLinkedQueue<Pair<String, Predicate>>();
 	ConcurrentLinkedQueue<Pair<String, Predicate>> perceptRems = new ConcurrentLinkedQueue<Pair<String, Predicate>>();
+	
+	
 	
 	Random r = new Random();
 	File settingsFile = new File("cleaning.settings");
@@ -182,7 +185,7 @@ public class CleaningWorld extends DefaultEnvironment implements MCAPLJobber
 							observeDirt(a.getAgName());
 							break;
 						case aa_finishclean:
-							perceptAdds.add(new Pair<String, Predicate>(a.getAgName(), new Predicate("finished")));
+							//perceptAdds.add(new Pair<String, Predicate>(a.getAgName(), new Predicate("finished")));
 							break;
 						}
 						//Update agent beliefs
@@ -372,6 +375,7 @@ public class CleaningWorld extends DefaultEnvironment implements MCAPLJobber
 	   		case "getNextInList":
 	   			ListTerm todo = (ListTerm)act.getTerm(0);
 	   			ListTerm done = (ListTerm)act.getTerm(1);
+	   			Predicate nextItem = new Predicate("none");
 	   			for (int i = 0; i < todo.size(); i++)
 	   			{
 	   				Term termToFind = todo.get(i);
@@ -386,11 +390,11 @@ public class CleaningWorld extends DefaultEnvironment implements MCAPLJobber
 	   				}
 	   				if (!found)
 	   				{
-	   					Predicate nextItem = new Predicate(termToFind.toString());
-	   					nextItem.unifies(act.getTerm(2), theta);
+	   					nextItem.setFunctor(termToFind.toString());
 	   					break;
 	   				}
 	   			}
+	   			nextItem.unifies(act.getTerm(2), theta);
 	   			break;
 	   		case "doneAll":
 	   			ListTerm todoList = (ListTerm)act.getTerm(0);
@@ -405,9 +409,22 @@ public class CleaningWorld extends DefaultEnvironment implements MCAPLJobber
 	   		case "prt":
 	   			for (int i = 0; i < act.getTermsSize(); i++)
 	   			{
-	   				System.out.print(act.getTerm(i).toString());
+	   				if (!act.getTerm(i).isString())
+	   				{
+	   					System.out.print(act.getTerm(i).toString());
+	   				}
+	   				else
+	   				{
+	   					System.out.print(act.getTerm(i).toString().substring(1, act.getTerm(i).toString().length() - 1));
+	   				}
 	   			}
 	   			System.out.println();
+	   			break;
+	   		case "do":
+	   			Term action = act.getTerm(0);
+	   			Boolean actionFinished = doAction(action.toString(),agName);
+	   			Predicate finished = new Predicate(actionFinished.toString());
+	   			finished.unifies(act.getTerm(1), theta);
 	   			break;
 	   		case "print":
 	   		case "send":
@@ -421,6 +438,41 @@ public class CleaningWorld extends DefaultEnvironment implements MCAPLJobber
     	return theta;
     }
 	
+	private Boolean doAction(String action, String agName) 
+	{
+		//Check if agent has finished given task
+		if (workingOn.containsKey(agName) && workingOn.get(agName).equals(action))
+		{
+			//Agent has no actions left for the task
+			if (agentActions.get(agName).size() == 0)
+			{
+				workingOn.remove(agName); 
+				return true;
+			}
+			else
+			{
+				return false; //Still working on the same action
+			}
+		}
+		//Check if currently working on a different action, clear for new action
+		if (workingOn.containsKey(agName) && !workingOn.get(agName).equals(action))
+		{
+			agentActions.clear();
+			workingOn.remove(agName);
+		}
+		//Set the agent to working on
+		workingOn.put(agName, action);
+		switch(action)
+		{
+		case "clean1":
+			goToZone(agName, 1);
+			addCleaningActions(agName,1);
+			break;
+		}
+		//No action is instant
+		return false;
+	}
+
 	private void addCleaningActions(String agName, int zone) 
 	{
 		//Assumes correct starting place (i.e. go to zone is called first)
@@ -549,11 +601,6 @@ public class CleaningWorld extends DefaultEnvironment implements MCAPLJobber
 	@Override
 	public void do_job() 
 	{
-		//Update GUI
-		for (UpdateToWorld u : listeners)
-		{
-			u.worldUpdate();
-		}
 		if (currentState == Process.p_updatePercept)
 		{
 			while (!perceptRems.isEmpty())
@@ -569,7 +616,11 @@ public class CleaningWorld extends DefaultEnvironment implements MCAPLJobber
 			this.notifyListeners();
 			currentState = Process.p_updatedPercept;
 		}
-	
+		//Update GUI
+		for (UpdateToWorld u : listeners)
+		{
+			u.worldUpdate();
+		}
 	}
 
 	@Override
