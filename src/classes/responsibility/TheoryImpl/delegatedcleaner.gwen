@@ -102,16 +102,22 @@ test[perform]
 +!doActionForRes(Res)[perform] : {B doAll, B res(Res,_,Name,_), B task(Name,[],_), ~B doneActions} <- prt("No actions for task ", Name), +doneActions;
 +!doActionForRes(Res)[perform] : {B doAll, B finished(Action,true), B workingActions(Actions), ~B doneActions} <- prt("Finished Action ", Action), -finished(Action,true), -haveAction(Action), -workingActions(Actions), appendList([Action], Actions, Done), +workingActions(Done);
 +!doActionForRes(Res)[perform] : {B doAll, B haveAction(none), ~B doneActions} <- prt("No more actions"), +doneActions;
-+!doActionForRes(Res)[perform] : {B doAll, B haveAction(Action), ~B doneActions(true)} <- prt("Doing Action ", Action), do(Action,Finished), -finished(Action,Finished), +finished(Action,Finished);
++!doActionForRes(Res)[perform] : {B doAll, B haveAction(Action), ~B doneActions} <- prt("Doing Action ", Action), do(Action,Finished), -finished(Action,Finished), +finished(Action,Finished), prt("Finished Status ", Action, " ", Finished);
 +!doActionForRes(Res)[perform] : {B doAll, B res(Res,_,Name,_), B task(Name,Actions,_), B workingActions(Done), ~B doneActions} <- prt("Getting next action in ", Actions), getNextInList(Actions, Done, Action), +haveAction(Action);
 
 //+!doActionForRes(Res)[perform] : {B doAll, B res(Res,_,Name,_), B task(Name,[],_), ~B doneActions(true)} <- print("No actions to do"), +doneActions(true);
 //+!doActionForRes(Res)[perform] : {B doAll, B res(Res,_,Name,_), B task(Name,Actions,_), B workingActions(Done), ~B doneActions(true)} <- +.lock, prt("Task ", Name, " with Actions", Actions), getNextInList(Actions,Done,Task), do(Task), appendList([Task],Done,NDone), -workingActions(Done), +workingActions(NDone), doneAll(Actions,NDone,Finished), prt("Done Task ", Task, " Completed ", NDone), -doneActions(false), +doneActions(Finished), -.lock;
 
-+!doActionForRes(Res)[perform] : {B doAll, B res(Res,_,Name,_), B task(Name,_,[]), ~B doneStates(true)} <- print("No states to do"), +doneStates(true);
-+!doActionForRes(Res)[perform] : {B doAll, B res(Res,_,Name,_), B task(Name,_,States), B workingStates(Done), ~B doneStates(true)} <- +.lock, prt("Task" , Name, " with States", States), getNextInList(States,Done,State), check(State), appendList([State],Done,NDone),  -workingStates(Done), +workingStates(NDone), doneAll(States,NDone,Finished), prt("Done State ", State, " Completed ", NDone),-doneStates(false), +doneStates(Finished), -.lock;
++!doActionForRes(Res)[perform] : {B doAll, B res(Res,_,Name,_), B task(Name,_,[]), ~B doneStates} <- prt("No states for task ", Name), +doneStates;
++!doActionForRes(Res)[perform] : {B doAll, B finished(State,true), B workingStates(States), ~B doneStates} <- prt("Finished State ", State), -finished(State,true), -haveState(State), -workingStates(States), appendList([State], States, Done), +workingStates(Done);
++!doActionForRes(Res)[perform] : {B doAll, B haveState(none), ~B doneStates} <- prt("No more states"), +doneStates;
++!doActionForRes(Res)[perform] : {B doAll, B haveState(State), ~B doneStates} <- prt("Doing State ", State), do(State,Finished), -finished(State,Finished), +finished(State,Finished), prt("Finished Status ", State, " ", Finished);
++!doActionForRes(Res)[perform] : {B doAll, B res(Res,_,Name,_), B task(Name,_,States), B workingStates(Done), ~B doneStates} <- prt("Getting next state in ", States), getNextInList(States, Done, State), +haveState(State);
 
-+!doActionForRes(Res)[perform] : {B doAll, B doneActions, B doneStates(true), B workingRes(List)} <- +.lock, appendList([Res],List,NList), -workingRes(List), +workingRes(NList), prt("Completed Res are ", NList), -doneActions, -doneStates(true), -.lock;
+//+!doActionForRes(Res)[perform] : {B doAll, B res(Res,_,Name,_), B task(Name,_,[]), ~B doneStates(true)} <- print("No states to do"), +doneStates(true);
+//+!doActionForRes(Res)[perform] : {B doAll, B res(Res,_,Name,_), B task(Name,_,States), B workingStates(Done), ~B doneStates(true)} <- +.lock, prt("Task" , Name, " with States", States), getNextInList(States,Done,State), check(State), appendList([State],Done,NDone),  -workingStates(Done), +workingStates(NDone), doneAll(States,NDone,Finished), prt("Done State ", State, " Completed ", NDone),-doneStates(false), +doneStates(Finished), -.lock;
+
++!doActionForRes(Res)[perform] : {B doAll, B doneActions, B doneStates, B workingRes(List)} <- +.lock, appendList([Res],List,NList), -workingRes(List), +workingRes(NList), prt("Completed Res are ", NList), -doneActions, -doneStates, -.lock;
 
 +!doActionForRes(Res)[perform] : {True} <- prt("Could not find res ", res, " likely all res completed"); 
 //Do one random action in a task before moving on
@@ -125,6 +131,6 @@ test[perform]
 +!test[perform] : {B cleanup(true)} <- +.lock, print("Do clean up"), +!doCleanUp[perform], -.lock, +!test[perform];
 +!test[perform] : {B currentRes([])} <- print("No Responsibilities"), +!test[perform];
 +!test[perform] : {~B ready} <- print("Not Ready Processing"), +!test[perform];
-+!test[perform] : {B currentRes(ResList), B workingRes(Comp), B ready} <- +.lock, getCared(ResList, Res, Comp), prt("Responsibilities ",ResList," doing ", Res), +!doActionForRes(Res)[perform], +!checkIfFulfilled(Res)[perform], doneAll(ResList,Comp,Out), -cleanup(false), +cleanup(Out), +!test[perform], -.lock;
++!test[perform] : {B currentRes(ResList), B workingRes(Comp), B ready} <- +.lock, getCared(ResList, Res, Comp), prt("Responsibilities ",ResList," doing ", Res), +!doActionForRes(Res)[perform], +!checkIfFulfilled(Res)[perform], doneAll(ResList,Comp,Out), -cleanup(false), +cleanup(Out), -.lock, +!test[perform]; 
 +!test[perform] : {True} <- print("Failed"), printstate;
 

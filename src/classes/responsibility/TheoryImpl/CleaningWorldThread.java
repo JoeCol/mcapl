@@ -157,6 +157,7 @@ public class CleaningWorldThread extends JPanel implements Runnable
 			for (AILAgent ag : world.getAgents())
 			{
 				Iterator<Literal> lit = ag.getBB().getPercepts();
+				//System.out.println("Looking for percepts in agent " + ag.getAgName());
 				
 				while (lit.hasNext())
 				{
@@ -173,6 +174,7 @@ public class CleaningWorldThread extends JPanel implements Runnable
 							g.fillOval(tx, ty, widthOfCell, heightOfCell);
 							g.setColor(Color.BLACK);
 							g.drawString(ag.getAgName(), tx, ty + (heightOfCell / 2));
+							//System.out.println("Agent " + ag.getAgName() + " is at " + x + "," + y);
 						}
 					}
 					catch (Exception ex)

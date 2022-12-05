@@ -29,6 +29,7 @@ import ail.syntax.Message;
 import ail.syntax.NumberTerm;
 import ail.syntax.NumberTermImpl;
 import ail.syntax.Predicate;
+import ail.syntax.StringTermImpl;
 import ail.syntax.Term;
 import ail.syntax.Unifier;
 import ail.util.AILexception;
@@ -150,6 +151,7 @@ public class CleaningWorld extends DefaultEnvironment implements MCAPLJobber
 					ArrayDeque<AgentAction> actionStack = agentActions.get(a.getAgName());
 					if (!actionStack.isEmpty())
 					{
+						
 						AgentAction action = actionStack.pop();
 						Pair<Integer, Integer> agentLocation = getAgentLocation(a.getAgName());
 						switch (action)
@@ -468,6 +470,22 @@ public class CleaningWorld extends DefaultEnvironment implements MCAPLJobber
 			goToZone(agName, 1);
 			addCleaningActions(agName,1);
 			break;
+		case "clean2":
+			goToZone(agName, 2);
+			addCleaningActions(agName,2);
+			break;
+		case "clean3":
+			goToZone(agName, 3);
+			addCleaningActions(agName,3);
+			break;
+		case "clean4":
+			goToZone(agName, 4);
+			addCleaningActions(agName,4);
+			break;
+		case "clean5":
+			goToZone(agName, 5);
+			addCleaningActions(agName,5);
+			break;
 		}
 		//No action is instant
 		return false;
@@ -606,11 +624,13 @@ public class CleaningWorld extends DefaultEnvironment implements MCAPLJobber
 			while (!perceptRems.isEmpty())
 			{
 				Pair<String, Predicate> p = perceptRems.poll();
+				//System.out.println("Removing percept " + p._2.toString() + " from agent " + p._1);
 				removePercept(p._1, p._2);
 			}
 			while (!perceptAdds.isEmpty())
 			{
 				Pair<String, Predicate> p = perceptAdds.poll();
+				//System.out.println("Adding percept " + p._2.toString() + " to agent " + p._1);
 				addPercept(p._1, p._2);
 			}
 			this.notifyListeners();
