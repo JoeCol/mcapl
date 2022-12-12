@@ -73,6 +73,9 @@ test[perform]
 //Delegate
 +!delegate(X,Ags)[perform] : {True} <- .send(Ags,:tell,X);
 
+//Report back
++!reportBack(Res) : {B finished(Res), B assignment(Assignee,Res,manager)} <- .send(Assignee, finished(Res));
+
 //Current Responsibility List Management
 +!add(X)[perform] : {B currentRes(Z)} <- +.lock, -currentRes(Z), appendList(X,Z,Y), +currentRes(Y), -.lock;
 +!rem(X)[perform] : {B currentRes(Z)} <- +.lock, -currentRes(Z), removeList(X,Z,Y), +currentRes(Y), -.lock;
@@ -90,8 +93,8 @@ test[perform]
 +!incomingRes(Assignee, [Res|T])[perform] : {~B capacity(Res)} <- +.lock, prt("Chose To Not Accept ", Res), +!incomingRes(Assignee, T)[perform], -.lock; //Should send message back
 
 //Check if res is fulfilled, remove if true and report back
-+!checkIfFulfilled(Res)[perform] : {B finished(Res), B res(Res,_,_,_,oneshot}} <- +!rem([Res])[perform], reportBack(Res);
-+!checkIfFulfilled(Res)[perform] : {B finished(Res), B res(Res,_,_,_,repeat}} <- reportBack(Res);
++!checkIfFulfilled(Res)[perform] : {B finished(Res), B res(Res,_,_,_,oneshot}} <- +!rem([Res])[perform], reportBack(Res), -finished(Res);
++!checkIfFulfilled(Res)[perform] : {B finished(Res), B res(Res,_,_,_,repeat}} <- reportBack(Res), -finished(Res);
 +!checkIfFulfilled(Res)[perform] : {B failed(Res), B res(Res,_,_,[],_)} <- +!rem([Res])[perform], reportBack(Res);
 +!checkIfFulfilled(Res)[perform] : {B failed(Res), B res(Res,_,_,FailRes,_)} <- +!rem([Res])[perform], reportBack(Res), +!incomingRes(FailRes)[perform];
 +!checkIfFulfilled(Res)[perform] : {True} <- prt("Worked on ", Res);
@@ -116,7 +119,7 @@ test[perform]
 //+!doActionForRes(Res)[perform] : {B doAll, B res(Res,_,Name,_), B task(Name,_,[]), ~B doneStates(true)} <- print("No states to do"), +doneStates(true);
 //+!doActionForRes(Res)[perform] : {B doAll, B res(Res,_,Name,_), B task(Name,_,States), B workingStates(Done), ~B doneStates(true)} <- +.lock, prt("Task" , Name, " with States", States), getNextInList(States,Done,State), check(State), appendList([State],Done,NDone),  -workingStates(Done), +workingStates(NDone), doneAll(States,NDone,Finished), prt("Done State ", State, " Completed ", NDone),-doneStates(false), +doneStates(Finished), -.lock;
 
-+!doActionForRes(Res)[perform] : {B doAll, B doneActions, B doneStates, B workingRes(List)} <- +.lock, appendList([Res],List,NList), -workingRes(List), +workingRes(NList), prt("Completed Res are ", NList), -doneActions, -doneStates, -.lock;
++!doActionForRes(Res)[perform] : {B doAll, B doneActions, B doneStates, B workingRes(List)} <- +.lock, +finished(Res), appendList([Res],List,NList), -workingRes(List), +workingRes(NList), prt("Completed Res are ", NList), -doneActions, -doneStates, -.lock;
 
 +!doActionForRes(Res)[perform] : {True} <- prt("Could not find res ", res, " likely all res completed"); 
 //Do one random action in a task before moving on
