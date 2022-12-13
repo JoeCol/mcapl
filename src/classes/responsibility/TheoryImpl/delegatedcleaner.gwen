@@ -42,39 +42,60 @@ workingStates([])
 workingRes([])
 
 //Assumptions for testing
-
+process(none,start)//where in process loop
 :Reasoning Rules:
-dirt :- dirt_1;
-dirt :- dirt_2;
-dirt :- dirt_3;
-dirt :- dirt_4;
-dirt :- dirt_5;
 
-//Get cared still not working
-//getCared(L, Out) :- getCared3(L, Out, N);
-//getCared3([], _, 0);
-//getCared3([H|T], R, RC) :- getCared3(T, R, RC), care(H, HC), [HC<RC];
-//getCared3([H|T], H, HC) :- getCared3(T, R, RC), care(H, HC), [RC<HC];
-
-contains(_, [], false);
-contains(Item,[Item],true);
-contains(Item,[Item|T],true);
-contains(Item,[Head|T],X) :- contains(Item,T,X);
 
 :Initial Goals:
 test[perform]
 
 :Plans: 
+//New Version
++!processSuccess
+
++!processFailure
+
++!checkSubRes([]) : {True} <- processSuccess;
++!checkSubRes([SubRes|T]) : {~B failed(SubRes)} <- +!checkSubRes([T]);
++!checkSubRes([SubRes|T]) : {B failed(SubRes)} <- +failed(Res), processFailure;
+
++!checkSuccess(Res) : {B failed} <- processFailure;
++!checkSuccess(Res) : {B finished} <- checkSubRes(SubRes);
+
++!workOnStates(States) : {doneStates(true)} <- checkSuccess(Res);
++!workOnStates(States) : {doneStates(false)} <- do(States, Done), doneStates, +!workOnStates(States);
+
+//Work on one action
++!workOnActions(Task) : {B actionState(finished), B process(Res,A)} <- -process(Res,A), +process(Res,states), +!processLoop[perform]
++!workOnActions(Task) : {B actionState(Action,true), B completedActions(DoneActions)} <- -completedActions(DoneActions), appendList([Action],DoneActions,Out), +completedActions(Out), +!processLoop[perform];
++!workOnActions(Task) : {B actionState(Action,false)} <- do(Action,Done), -actionState
++!workOnActions(Task) : {B task(Task,Actions,_), B completedActions(DoneActions)} <- getNextInList(Actions,DoneActions,Action), do(Action,Done), +actionState(Action,Done), +!processLoop[perform];
+
+//New responsibility has been added
++!processLoop[perform] : {~B ready} <- prt("Waiting for decision on incoming"), *ready, prt("Started processing again"), +!processLoop[perform];
+//New responsibility added, reset to check if new responsibility is higher priority
++!processLoop[perform] : {B newRes, B process(A,B)} <- -process(A,B), +process(none,start), -newRes; 
+//Get the most cared about responsibility
++!processLoop[perform] : {B process(none,start), B currentRes(ResList} <- getCared(ResList,Res), -process(none,start), +process(Res,actions), +!processLoop[perform];
+//Do an action from the Task associated with the Responsibility 
++!processLoop[perform] : {B process(Res,actions), B res(Res,_,Task,_,_)} <- workOnActions(Task);
++!processLoop[perform] : {B process(Res,states)} <- workOnStates(Res);
++!processLoop[perform] : {B process(Res,check)} <- checkSuccess(Res);
++!processLoop[perform] : {B process(Res,subRes)} <- processSubRes(Res);
++!processLoop[perform] : {B process(Res,failure)} <- processFailure(Res);
++!processLoop[perform] : {B process(Res,success)} <- processSuccess(Res);
 
 //Received a delegated responsibility Example: assignment([ag1,ag2],safety)
-+.received(:tell, assignment(Assignee,Res)): {True} <- +.lock, -ready, print("Received Assignment"), +!incomingRes(Assignee,[Res])[perform], +ready, -.lock;
++.received(:tell, assignment(Assignee,Res)): {True} <- -ready, +.lock, print("Received Assignment"), +!incomingRes(Assignee,[Res])[perform], -.lock, +ready;
 +.received(:tell, X) : {True} <- print(X);
 
 //Delegate
 +!delegate(X,Ags)[perform] : {True} <- .send(Ags,:tell,X);
 
 //Report back
-+!reportBack(Res) : {B finished(Res), B assignment(Assignee,Res,manager)} <- .send(Assignee, finished(Res));
++!reportBack(Res)[perform] : {B finished(Res), B assignment(Assignee,Res,manager)} <- .send(Assignee, :tell, finished(Res));
++!reportBack(Res)[perform] : {B failed(Res), B assignment(Assignee,Res,manager)} <- .send(Assignee, :tell, failed(Res));
++!reportBack(Res)[perform] : {True} <- prt("Reporting back unfinished responsibility ", Res);
 
 //Current Responsibility List Management
 +!add(X)[perform] : {B currentRes(Z)} <- +.lock, -currentRes(Z), appendList(X,Z,Y), +currentRes(Y), -.lock;
@@ -85,21 +106,22 @@ test[perform]
 +!informAssignment([Assignee|T], Res)[perform] : {True} <- prt("Informing acceptance to ", Assignee), .send(Assignee, :tell, accepted(Res, manager)), +!informAssignment(T,Res)[perform];
 
 //Add Accepted Responsibility to list
-+!addAcceptedRes(Assignee, NewRes)[perform] : {B currentRes(Res), B res(NewRes, SubRes, _, _)} <- +.lock, prt("Accepting Responsibility ", res), +assignment(Assignee,Res,manager), +!informAssignment(Assignee,Res)[perform], +!add([NewRes])[perform], -.lock;
++!addAcceptedRes(Assignee, NewRes)[perform] : {B currentRes(Res), B res(NewRes,SubRes,_,_,_)} <- +.lock, prt("Accepting Responsibility ", res), +assignment(Assignee,Res,manager), +!informAssignment(Assignee,Res)[perform], +!add([NewRes])[perform], -.lock;
 
 //Decide if to accept responsibility
-+!incomingRes(Assignee, [])[perform] : {True} <- +.lock, print("Processed all responsibilities"), -.lock;
-+!incomingRes(Assignee, [Res|T])[perform] : {B capacity(Res), B res(Res,Sub,_,_)} <- +.lock, prt("Chose To Accept ", Res), +!addAcceptedRes(Assignee, Res)[perform], +!incomingRes(Assignee, T)[perform], +!incomingRes(Assignee, Sub)[perform], -.lock;
++!incomingRes(_, [])[perform] : {True} <- +.lock, print("Processed all responsibilities"), -.lock;
++!incomingRes(Assignee, [Res|T])[perform] : {B capacity(Res), B res(Res,Sub,_,_,_)} <- +.lock, prt("Chose To Accept ", Res), +!addAcceptedRes(Assignee, Res)[perform], +!incomingRes(Assignee, T)[perform], +!incomingRes(Assignee, Sub)[perform], -.lock;
 +!incomingRes(Assignee, [Res|T])[perform] : {~B capacity(Res)} <- +.lock, prt("Chose To Not Accept ", Res), +!incomingRes(Assignee, T)[perform], -.lock; //Should send message back
 
 //Check if res is fulfilled, remove if true and report back
-+!checkIfFulfilled(Res)[perform] : {B finished(Res), B res(Res,_,_,_,oneshot}} <- +!rem([Res])[perform], reportBack(Res), -finished(Res);
-+!checkIfFulfilled(Res)[perform] : {B finished(Res), B res(Res,_,_,_,repeat}} <- reportBack(Res), -finished(Res);
-+!checkIfFulfilled(Res)[perform] : {B failed(Res), B res(Res,_,_,[],_)} <- +!rem([Res])[perform], reportBack(Res);
++!checkIfFulfilled(Res)[perform] : {B finished(Res), B res(Res,_,_,_,oneshot)} <- +!rem([Res])[perform], reportBack(Res), -finished(Res);
++!checkIfFulfilled(Res)[perform] : {B finished(Res), B res(Res,_,_,_,repeat)} <- +!reportBack(Res)[perform], -finished(Res);
++!checkIfFulfilled(Res)[perform] : {B failed(Res), B res(Res,_,_,[],_)} <- +!rem([Res])[perform], +!reportBack(Res)[perform];
 +!checkIfFulfilled(Res)[perform] : {B failed(Res), B res(Res,_,_,FailRes,_)} <- +!rem([Res])[perform], reportBack(Res), +!incomingRes(FailRes)[perform];
 +!checkIfFulfilled(Res)[perform] : {True} <- prt("Worked on ", Res);
 
 //Action For Res
++!doActionForRes(Res)[perform] :  {B failed(Res)} <- prt("Failed Res ", Res);
 //Do all actions in a task before moving on to next res
 +!doActionForRes(Res)[perform] : {B doAll, B res(Res,_,Name,_,_), B task(Name,[],_), ~B doneActions} <- prt("No actions for task ", Name), +doneActions;
 +!doActionForRes(Res)[perform] : {B doAll, B finished(Action,true), B workingActions(Actions), ~B doneActions} <- prt("Finished Action ", Action), -finished(Action,true), -haveAction(Action), -workingActions(Actions), appendList([Action], Actions, Done), +workingActions(Done);
@@ -119,7 +141,7 @@ test[perform]
 //+!doActionForRes(Res)[perform] : {B doAll, B res(Res,_,Name,_), B task(Name,_,[]), ~B doneStates(true)} <- print("No states to do"), +doneStates(true);
 //+!doActionForRes(Res)[perform] : {B doAll, B res(Res,_,Name,_), B task(Name,_,States), B workingStates(Done), ~B doneStates(true)} <- +.lock, prt("Task" , Name, " with States", States), getNextInList(States,Done,State), check(State), appendList([State],Done,NDone),  -workingStates(Done), +workingStates(NDone), doneAll(States,NDone,Finished), prt("Done State ", State, " Completed ", NDone),-doneStates(false), +doneStates(Finished), -.lock;
 
-+!doActionForRes(Res)[perform] : {B doAll, B doneActions, B doneStates, B workingRes(List)} <- +.lock, +finished(Res), appendList([Res],List,NList), -workingRes(List), +workingRes(NList), prt("Completed Res are ", NList), -doneActions, -doneStates, -.lock;
++!doActionForRes(Res)[perform] : {~B failed(Res), B doAll, B doneActions, B doneStates, B workingRes(List)} <- +.lock, +finished(Res), appendList([Res],List,NList), -workingRes(List), +workingRes(NList), prt("Completed Res are ", NList), -doneActions, -doneStates, -.lock;
 
 +!doActionForRes(Res)[perform] : {True} <- prt("Could not find res ", res, " likely all res completed"); 
 //Do one random action in a task before moving on
@@ -135,4 +157,5 @@ test[perform]
 +!test[perform] : {~B ready} <- print("Not Ready Processing"), +!test[perform];
 +!test[perform] : {B currentRes(ResList), B workingRes(Comp), B ready} <- +.lock, getCared(ResList, Res, Comp), prt("Responsibilities ",ResList," doing ", Res), +!doActionForRes(Res)[perform], +!checkIfFulfilled(Res)[perform], doneAll(ResList,Comp,Out), -cleanup(false), +cleanup(Out), -.lock, +!test[perform]; 
 +!test[perform] : {True} <- print("Failed"), printstate;
+
 

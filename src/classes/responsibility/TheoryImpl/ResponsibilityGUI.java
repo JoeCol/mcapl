@@ -28,6 +28,7 @@ import java.awt.GridLayout;
 import javax.swing.JSlider;
 import javax.swing.event.ChangeListener;
 import javax.swing.event.ChangeEvent;
+import javax.swing.JTabbedPane;
 
 public class ResponsibilityGUI {
 
