@@ -47,40 +47,46 @@ process(none,start)//where in process loop
 
 
 :Initial Goals:
-test[perform]
+processLoop[perform]
 
 :Plans: 
 //New Version
 //Responsibility has succeeded
-+!processSuccess(Res)[perform] : {B res(Res,_,_,_,oneshot} <- prt("Process Success of ", Res);
-+!processSuccess(Res)[perform] : {B res(Res,_,_,_,repeat} <- prt("Process Success of ", Res);
++!processSuccess(Res)[perform] : {B res(Res,_,_,_,oneshot)} <- prt("Process Success of ", Res);
++!processSuccess(Res)[perform] : {B res(Res,_,_,_,repeat)} <- prt("Process Success of ", Res);
 
 //Responsibility has failed - no fail res, with fail res
 +!processFailure(Res)[perform] : {B res(Res,_,_,[],_)} <- -failed(Res), +!rem([Res])[perform], +!reportFailure(Res)[perform], prt("Process Failure");
 +!processFailure(Res)[perform] : {B res(Res,_,_,FailRes,_)} <- -failed(Res), +!rem([Res])[perform], +!reportFailure(Res)[perform], +!incomingRes(manager,FailRes)[perform], prt("Process Failure");
 
+//Check if sub responsibilities have succeeded, then add success if all true. Success should only be checked when all tasks have completed and not failed
++!checkIndividualSuccess(Res,[])[perform] : {True} <- +success(Res), -process(Res,checkSuccess), +process(Res,success), +!processLoop[perform];
++!checkIndividualSuccess(Res,[SubRes|T])[perform] : {~B success(SubRes)} <- -process(Res,checkSuccess), +process(none,start), +!processLoop[perform];//Done all actions but sub responsibility not finished, generally shouldn't happen
++!checkIndividualSuccess(Res,[SubRes|T])[perform] : {B success(SubRes)} <- +!checkIndividualSuccess(Res,T)[perform];
++!checkSuccess(Res)[perform] : {B res(Res,SubRes,_,_,_)} <- +!checkIndividualSuccess(Res,SubRes)[perform];
+
 //Check if sub responsibilities have failed
-+!checkIndividual(Res,[])[perform] : {True} <- -process(Res,check), +process(Res,success), +!processLoop()[perform];
-+!checkIndividual(Res,[SubRes|T])[perform] : {~B failed(SubRes)} <- +!checkIndividual(T)[perform];
-+!checkIndividual(Res,[SubRes|T])[perform] : {B failed(SubRes)} <- +failed(Res), -process(Res,check), +process(Res,failure), +!processLoop()[achieve];
-+!checkSubRes(Res)[perform] : {B res(Res,SubRes,_,_,_)} <- +!checkIndividual(Res,SubRes)[perform];
++!checkIndividualFailure(Res,[])[perform] : {True} <- -process(Res,checkFailure), +process(Res,checkSuccess), +!processLoop[perform];
++!checkIndividualFailure(Res,[SubRes|T])[perform] : {~B failed(SubRes)} <- +!checkIndividualFailure(Res,T)[perform];
++!checkIndividualFailure(Res,[SubRes|T])[perform] : {B failed(SubRes)} <- +failed(Res), -process(Res,check), +process(Res,failure), +!processLoop[perform];
++!checkFailedSubRes(Res)[perform] : {B res(Res,SubRes,_,_,_)} <- +!checkIndividualFailure(Res,SubRes)[perform];
 
 //Check if responsibility has failed (raised by environment)
-+!checkSuccess(Res)[perform] : {B failed(Res)} <- -process(Res,check), +process(Res,failure), +!processLoop()[perform];
-+!checkSuccess(Res)[perform] : {~B failed(Res)} <- -process(Res,check), +process(Res,subRes), +!processLoop()[perform];
++!checkFailed(Res)[perform] : {B failed(Res)} <- -process(Res,checkFailure), +process(Res,failure), +!processLoop[perform];
++!checkFailed(Res)[perform] : {~B failed(Res)} <- -process(Res,checkFailure), +process(Res,checkFSubRes), +!processLoop[perform];
 
 //Work on One State
 +!checkSDone(State,true)[perform] : {B completedStates(DoneStates)} <- -completedStates(DoneStates), appendList([State],DoneStates,Out), +completedStates(Out), +!processLoop[perform];
-+!checkSDone(State,false)[perform] : {True} <- -actionState(State), processLoop()[perform];
-+!workOnStates(Task)[perform] : {B actionState(none)} <- -actionState(none,_), -process(Res,A), +process(Res,check), +!processLoop[perform];
-+!workOnStates(Task)[perform] : {B actionState(State)} <- do(State,Done), -actionState(State), +!checkSDone(State,Done);
++!checkSDone(State,false)[perform] : {True} <- -actionState(State), +!processLoop[perform];
++!workOnStates(Task)[perform] : {B actionState(none)} <- -actionState(none,_), -process(Res,A), +process(Res,checkFailed), +!processLoop[perform];
++!workOnStates(Task)[perform] : {B actionState(State)} <- do(State,Done), -actionState(State), +!checkSDone(State,Done)[perform];
 +!workOnStates(Task)[perform] : {B task(Task,States,_), B completedStates(DoneStates)} <- getNextInList(States,DoneStates,State), +actionState(State), +!workOnStates(Task)[perform];
 
 //Work on one action
 +!checkADone(Action,true)[perform] : {B completedActions(DoneActions)} <- -completedActions(DoneActions), appendList([Action],DoneActions,Out), +completedActions(Out), +!processLoop[perform];
-+!checkADone(Action,false)[perform] : {True} <- +!processLoop()[perform];
++!checkADone(Action,false)[perform] : {True} <- +!processLoop[perform];
 +!workOnActions(Task)[perform] : {B actionState(none)} <- -actionState(none,_), -process(Res,A), +process(Res,states), +!processLoop[perform];
-+!workOnActions(Task)[perform] : {B actionState(Action)} <- do(Action,Done), -actionState(Action), +!checkADone(Action,Done);
++!workOnActions(Task)[perform] : {B actionState(Action)} <- do(Action,Done), -actionState(Action), +!checkADone(Action,Done)[perform];
 +!workOnActions(Task)[perform] : {B task(Task,Actions,_), B completedActions(DoneActions)} <- getNextInList(Actions,DoneActions,Action), +actionState(Action), +!workOnActions(Task)[perform];
 
 //New responsibility has been added
@@ -92,8 +98,8 @@ test[perform]
 //Do an action from the Task associated with the Responsibility 
 +!processLoop[perform] : {B process(Res,actions), B res(Res,_,Task,_,_)} <- workOnActions(Task);
 +!processLoop[perform] : {B process(Res,states)} <- workOnStates(Res);
-+!processLoop[perform] : {B process(Res,check)} <- checkSuccess(Res);
-+!processLoop[perform] : {B process(Res,subRes)} <- processSubRes(Res);
++!processLoop[perform] : {B process(Res,checkFailed)} <- checkFailed(Res);
++!processLoop[perform] : {B process(Res,checkFSubRes)} <- checkFailedSubRes(Res);
 +!processLoop[perform] : {B process(Res,failure)} <- processFailure(Res);
 +!processLoop[perform] : {B process(Res,success)} <- processSuccess(Res);
 
