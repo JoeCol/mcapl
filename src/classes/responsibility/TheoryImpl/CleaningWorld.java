@@ -428,6 +428,10 @@ public class CleaningWorld extends DefaultEnvironment implements MCAPLJobber
 	   			Predicate finished = new Predicate(actionFinished.toString());
 	   			finished.unifies(act.getTerm(1), theta);
 	   			break;
+	   		case "break":
+	   			System.out.println("Breakpoint");
+	   			break;
+	   		case "printstate":
 	   		case "print":
 	   		case "send":
 	   		case "sum":
@@ -464,7 +468,7 @@ public class CleaningWorld extends DefaultEnvironment implements MCAPLJobber
 		}
 		//Set the agent to working on
 		workingOn.put(agName, action);
-		switch(action)
+		/*switch(action) //while debugging
 		{
 		case "clean1":
 			goToZone(agName, 1);
@@ -486,7 +490,7 @@ public class CleaningWorld extends DefaultEnvironment implements MCAPLJobber
 			goToZone(agName, 5);
 			addCleaningActions(agName,5);
 			break;
-		}
+		}*/
 		//No action is instant
 		return false;
 	}
