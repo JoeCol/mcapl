@@ -468,7 +468,7 @@ public class CleaningWorld extends DefaultEnvironment implements MCAPLJobber
 		}
 		//Set the agent to working on
 		workingOn.put(agName, action);
-		/*switch(action) //while debugging
+		switch(action) //while debugging
 		{
 		case "clean1":
 			goToZone(agName, 1);
@@ -490,7 +490,27 @@ public class CleaningWorld extends DefaultEnvironment implements MCAPLJobber
 			goToZone(agName, 5);
 			addCleaningActions(agName,5);
 			break;
-		}*/
+		case "observe1":
+			goToZone(agName, 1);
+			observeDirt(agName);
+			break;
+		case "observe2":
+			goToZone(agName, 2);
+			observeDirt(agName);
+			break;
+		case "observe3":
+			goToZone(agName, 3);
+			observeDirt(agName);
+			break;
+		case "observe4":
+			goToZone(agName, 4);
+			observeDirt(agName);
+			break;
+		case "observe5":
+			goToZone(agName, 5);
+			observeDirt(agName);
+			break;
+		}
 		//No action is instant
 		return false;
 	}
