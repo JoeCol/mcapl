@@ -129,7 +129,7 @@ public class CleaningWorld extends DefaultEnvironment implements MCAPLJobber
 		lt.add(new Predicate("initial"));
 		msgPred.addTerm(lt);
 		msgPred.addTerm(new Predicate("safety"));
-		addMessage("agent1", new Message(1, "initial", "agent1", msgPred));
+		addMessage("manager", new Message(1, "initial", "manager", msgPred));
 		
 		environmentTimer.scheduleAtFixedRate(new TimerTask()
 		{
@@ -417,7 +417,7 @@ public class CleaningWorld extends DefaultEnvironment implements MCAPLJobber
 	   				}
 	   				else
 	   				{
-	   					System.out.print(act.getTerm(i).toString().substring(1, act.getTerm(i).toString().length() - 1));
+	   					System.out.print(agName + ": " +act.getTerm(i).toString().substring(1, act.getTerm(i).toString().length() - 1));
 	   				}
 	   			}
 	   			System.out.println();
