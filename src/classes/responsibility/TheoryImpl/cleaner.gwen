@@ -116,12 +116,18 @@ processLoop[achieve]
 +!processLoop[achieve] : {B process(Res,failure)} <- prt("Failed ", Res), +!processFailure(Res)[perform];
 +!processLoop[achieve] : {B process(Res,success)} <- prt("Success ", Res), +!processSuccess(Res)[perform];
 
+//Current Responsibility List Management
++!add(X)[perform] : {B currentRes(Z)} <- +.lock, -currentRes(Z), appendList(X,Z,Y), +currentRes(Y), -.lock;
++!rem(X)[perform] : {B currentRes(Z)} <- +.lock, -currentRes(Z), removeList(X,Z,Y), +currentRes(Y), -.lock;
+
 //Received a delegated responsibility Example: assignment([ag1,ag2],safety)
-+.received(:tell, assignment(Assignee,Res)): {True} <- -ready, +.lock, print("Received Assignment"), +!incomingRes(Assignee,[Res])[perform], -.lock, +ready;
++.received(:tell, assignment(Assignee,Res)) : {True} <- -ready, +.lock, prt("Received Assignment"), +!incomingRes(Assignee,[Res])[perform], -.lock, +ready;
+//Received confirmation of delegation
++.received(:tell, accepted(Res,Assignee)) : {True} <- break, +sentRes(Res,Assignee), +delegated(Res,Assignee);
 +.received(:tell, X) : {True} <- print(X), printstate, break;
 
-//Delegate
-+!delegate(X,Ags)[perform] : {True} <- .send(Ags,:tell,X);
+//Delegate a responsibility
++!delegate(Res,Ags)[perform] : {True} <- prt("Delegating ", Res, " to ", Ags), .send(Ags, :tell, assignment(cleaner,Res)), *sentRes(Res,Ags), -sentRes(Res,Ags), prt("Sent and received");
 
 //Report back
 +!reportSuccess(Res)[perform] : {B assignment(Assignee,Res,cleaner)} <- .send(Assignee, :tell, finished(Res));
@@ -129,20 +135,20 @@ processLoop[achieve]
 +!reportFailure(Res)[perform] : {B assignment(Assignee,Res,cleaner)} <- .send(Assignee, :tell, failed(Res));
 +!reportBack(Res)[perform] : {True} <- prt("Reporting back unfinished responsibility ", Res);
 
-//Current Responsibility List Management
-+!add(X)[perform] : {B currentRes(Z)} <- +.lock, -currentRes(Z), appendList(X,Z,Y), +currentRes(Y), -.lock;
-+!rem(X)[perform] : {B currentRes(Z)} <- +.lock, -currentRes(Z), removeList(X,Z,Y), +currentRes(Y), -.lock;
-
 //Tell assignee of acceptance
-+!informAssignment([], Res)[perform] : {True} <- print("Informed all assignees");
++!informAssignment([], Res)[perform] : {True} <- prt("Informed all assignees");
 +!informAssignment([Assignee|T], Res)[perform] : {True} <- prt("Informing acceptance to ", Assignee), .send(Assignee, :tell, accepted(Res, cleaner)), +!informAssignment(T,Res)[perform];
+//Inform assignment single assignee
++!informAssignment(Assignee, Res)[perform] : {True} <- prt("Informing single acceptance to ", Assignee), .send(Assignee, :tell, accepted(Res, cleaner));
 
 //Add Accepted Responsibility to list
-+!addAcceptedRes(Assignee, NewRes)[perform] : {B currentRes(Res), B res(NewRes,SubRes,_,_,_)} <- +.lock, prt("Accepting Responsibility ", res), +assignment(Assignee,NewRes,cleaner), +!informAssignment(Assignee,Res)[perform], +!add([NewRes])[perform], -.lock;
++!addAcceptedRes(Assignee, NewRes)[perform] : {B currentRes(Res), B res(NewRes,SubRes,_,_,_)} <- +.lock, prt("Accepting Responsibility ", NewRes), +assignment(Assignee,NewRes,cleaner), +!informAssignment(Assignee,Res)[perform], +!add([NewRes])[perform], -.lock;
 
+//Accepting or delegating responsibilities
++!incomingRes(_, [])[perform] : {True} <- +.lock, prt("Processed all responsibilities"), -.lock;
+//Delegate responsiblity
++!incomingRes(Assignee, [Res|T])[perform] : {B capacity(Res), B delegate(Res,Ags)} <- +.lock, prt("Chose To Delegate ", Res), +!addAcceptedRes(Assignee, Res)[perform], +!incomingRes(Assignee, T)[perform], +!delegate(Res,Ags)[perform], -.lock;
 //Decide if to accept responsibility
-+!incomingRes(_, [])[perform] : {True} <- +.lock, print("Processed all responsibilities"), -.lock;
 +!incomingRes(Assignee, [Res|T])[perform] : {B capacity(Res), B res(Res,Sub,_,_,_)} <- +.lock, prt("Chose To Accept ", Res), +!addAcceptedRes(Assignee, Res)[perform], +!incomingRes(Assignee, T)[perform], +!incomingRes(Assignee, Sub)[perform], -.lock;
 +!incomingRes(Assignee, [Res|T])[perform] : {~B capacity(Res)} <- +.lock, prt("Chose To Not Accept ", Res), +!incomingRes(Assignee, T)[perform], -.lock; //Should send message back
-
 

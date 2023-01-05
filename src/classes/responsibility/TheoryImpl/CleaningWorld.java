@@ -409,6 +409,7 @@ public class CleaningWorld extends DefaultEnvironment implements MCAPLJobber
 	   			doneAll.unifies(act.getTerm(2), theta);
 	   			break;
 	   		case "prt":
+	   			System.out.print(agName + ": ");
 	   			for (int i = 0; i < act.getTermsSize(); i++)
 	   			{
 	   				if (!act.getTerm(i).isString())
@@ -417,7 +418,7 @@ public class CleaningWorld extends DefaultEnvironment implements MCAPLJobber
 	   				}
 	   				else
 	   				{
-	   					System.out.print(agName + ": " +act.getTerm(i).toString().substring(1, act.getTerm(i).toString().length() - 1));
+	   					System.out.print(act.getTerm(i).toString().substring(1, act.getTerm(i).toString().length() - 1));
 	   				}
 	   			}
 	   			System.out.println();
@@ -429,6 +430,7 @@ public class CleaningWorld extends DefaultEnvironment implements MCAPLJobber
 	   			finished.unifies(act.getTerm(1), theta);
 	   			break;
 	   		case "break":
+	   			System.out.print(agName + ": ");
 	   			System.out.println("Breakpoint");
 	   			break;
 	   		case "printstate":
@@ -463,7 +465,7 @@ public class CleaningWorld extends DefaultEnvironment implements MCAPLJobber
 		//Check if currently working on a different action, clear for new action
 		if (workingOn.containsKey(agName) && !workingOn.get(agName).equals(action))
 		{
-			agentActions.clear();
+			agentActions.get(agName).clear();
 			workingOn.remove(agName);
 		}
 		//Set the agent to working on
