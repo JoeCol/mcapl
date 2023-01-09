@@ -110,9 +110,10 @@ processLoop[achieve]
 //Get the most cared about responsibility
 +!processLoop[achieve] : {B process(none,start), B currentRes(ResList), B workedOnRes(WorkedOn)} <- getCared(ResList, Res, WorkedOn), prt("Got Responsibility ", Res), +!updateProcess(Res,checkDelegate)[perform];
 //Check if need to delegate, first already delegated, second not delegated, third not needed to delegate
-+!processLoop[achieve] : {B process(Res,checkDelegate), B delegate(Res), B delegated(Res,Agent)} <- prt(Res," already delegated"), +!updateProcess(Res,checkFailure)[perform];
-+!processLoop[achieve] : {B process(Res,checkDelegate), B delegate(Res)} <- prt("Delegating ", Res), +!delegate(Res,cleaner)[perform];
-+!processLoop[achieve] : {B process(Res,checkDelegate)} <- prt("Not delegating"), +!updateProcess(Res,actions)[perform];
++!processLoop[achieve] : {B process(Res,checkDelegate), B delegate(Res,Ags), B delegated(Res,Ags)} <- prt(Res," already delegated"), +!updateProcess(Res,checkFailure)[perform];
++!processLoop[achieve] : {B process(Res,checkDelegate), B delegate(Res,Ags), ~B waiting(Res,Ags)} <- prt("Delegating ", Res), +!delegate(Res,Ags)[perform];
++!processLoop[achieve] : {B process(Res,checkDelegate), B delegate(Res,Ags), B waiting(Res,Ags)} <- prt("Waiting for reply ", Res, " from ", Ags),  +!updateProcess(Res,checkFailure)[perform];
++!processLoop[achieve] : {B process(Res,checkDelegate)} <- prt("Not delegating ", Res), +!updateProcess(Res,actions)[perform];
 //Do an action from the Task associated with the Responsibility 
 +!processLoop[achieve] : {B process(Res,actions), B res(Res,_,Task,_,_)} <- prt("Working on Actions ", Res), +!workOnActions(Task)[perform];
 +!processLoop[achieve] : {B process(Res,states), B res(Res,_,Task,_,_)} <- prt("Working on States ", Res), +!workOnStates(Task)[perform];
@@ -129,11 +130,11 @@ processLoop[achieve]
 //Received a delegated responsibility Example: assignment([ag1,ag2],safety)
 +.received(:tell, assignment(Assignee,Res)) : {True} <- -ready, +.lock, prt("Received Assignment"), +!incomingRes(Assignee,[Res])[perform], -.lock, +ready;
 //Received confirmation of delegation
-+.received(:tell, accepted(Res,Assignee)) : {True} <- prt("Received ", accepted(Res,Assignee)), +sentRes(Res,Assignee), +delegated(Res,Assignee);
++.received(:tell, accepted(Res,Assignee)) : {True} <- prt("Received ", accepted(Res,Assignee)), -waiting(Res,Assignee), +delegated(Res,Assignee);
 +.received(:tell, X) : {True} <- print(X), printstate, break;
 
 //Delegate a responsibility
-+!delegate(Res,Ags)[perform] : {True} <- prt("Delegating ", Res, " to ", Ags), .send(Ags, :tell, assignment(manager,Res)), *sentRes(Res,Ags), -sentRes(Res,Ags), prt("Sent and received");
++!delegate(Res,Ags)[perform] : {True} <- prt("Delegating ", Res, " to ", Ags), +waiting(Res,Ags), .send(Ags, :tell, assignment(manager,Res));
 
 //Report back
 +!reportSuccess(Res)[perform] : {B assignment(Assignee,Res,manager)} <- .send(Assignee, :tell, finished(Res));
