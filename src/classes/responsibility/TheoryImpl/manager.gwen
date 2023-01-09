@@ -44,7 +44,7 @@ workedOnRes([])
 process(none,start)//where in process loop
 
 //Assumptions for testing
-delegate(safety,cleaner)
+delegate(clean,cleaner)
 
 :Reasoning Rules:
 
@@ -131,6 +131,7 @@ processLoop[achieve]
 +.received(:tell, assignment(Assignee,Res)) : {True} <- -ready, +.lock, prt("Received Assignment"), +!incomingRes(Assignee,[Res])[perform], -.lock, +ready;
 //Received confirmation of delegation
 +.received(:tell, accepted(Res,Assignee)) : {True} <- prt("Received ", accepted(Res,Assignee)), -waiting(Res,Assignee), +delegated(Res,Assignee);
++.received(:tell, finished(Res)) : {True} <- print("Received Finished");
 +.received(:tell, X) : {True} <- print(X), printstate, break;
 
 //Delegate a responsibility
