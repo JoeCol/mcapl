@@ -6,7 +6,7 @@ GWENDOLEN
 //Possible Tasks task(name, [goals/actions], [statesOfTheWorld])
 task(report, [reportToHuman], [])
 task(safety, [], [isSafe])
-task(clean, [clean1,clean2,clean3,clean4,clean5], [])
+task(clean, [clean2,clean5], [])
 task(observer, [observe1,observe2,observe3,observe4,observe5], [allRoomsWillBeObserved])
  
 //Possible Responsibilities res(name, [subres], task, [failres], {oneshot,repeat})

@@ -1,12 +1,12 @@
 GWENDOLEN
 
-:name: manager
+:name: cleaner2
 
 :Initial Beliefs:
 //Possible Tasks task(name, [goals/actions], [statesOfTheWorld])
 task(report, [reportToHuman], [])
 task(safety, [], [isSafe])
-task(clean, [clean1,clean2,clean3,clean4,clean5], [])
+task(clean, [clean1,clean3,clean4], [])
 task(observer, [observe1,observe2,observe3,observe4,observe5], [allRoomsWillBeObserved])
  
 //Possible Responsibilities res(name, [subres], task, [failres], {oneshot,repeat})
@@ -16,16 +16,17 @@ res(clean, [], clean, [], repeat)
 res(observe, [], observer, [], repeat) 
 
 //care values
-care(clean,2)
+care(clean,5)
 care(safety,4)
 care(observe,3)
 care(report,10)
 
 //Capacity - In essence pre-computed
-capacity(report)
+capacity(reportToHuman)
 capacity(safety)
-capacity(observe)
+capacity(isSafe)
 capacity(clean)
+capacity(observe)
 
 //Working on task/res order
 doAll
@@ -40,26 +41,16 @@ completedActions([])
 completedStates([])
 workedOnRes([])
 
-//Currently working state
-process(none,start)//where in process loop
-
 //Assumptions for testing
-delegate(clean,[cleaner,cleaner2])
-
+process(none,start)//where in process loop
 :Reasoning Rules:
-equalLength([],[]);
-equalLength([X|T],[Y|P]) :- equalLength(T,P);
+
 
 :Initial Goals:
 processLoop[achieve]
-//test[perform]
 
-:Plans:
-//Test section
-+!test[perform] : {B equalLength([],[])} <- prt("equal length works on initial"), +!test2[perform];
-+!test2[perform] : {B equalLength([a,b,c],[l,b,c])} <- prt("equal length works on 3 length"), +!test3[perform];
-+!test3[perform] : {~B equalLength([a,b,c,d],[l,b,c])} <- prt("equal length works on not belief"); 
- 
+
+:Plans: 
 //New Version
 //Update process
 +!updateProcess(Res,State)[perform] : {B process(PRes, PState)} <- -process(PRes, PState), +process(Res, State);
@@ -78,7 +69,7 @@ processLoop[achieve]
 
 //Responsibility has failed - no fail res, with fail res
 +!processFailure(Res)[perform] : {B res(Res,_,_,[],_)} <- -failed(Res), +!rem([Res])[perform], +!reportFailure(Res)[perform], prt("Process Failure");
-+!processFailure(Res)[perform] : {B res(Res,_,_,FailRes,_)} <- -failed(Res), +!rem([Res])[perform], +!reportFailure(Res)[perform], +!incomingRes(manager,FailRes)[perform], prt("Process Failure with FailRes");
++!processFailure(Res)[perform] : {B res(Res,_,_,FailRes,_)} <- -failed(Res), +!rem([Res])[perform], +!reportFailure(Res)[perform], +!incomingRes(cleaner2,FailRes)[perform], prt("Process Failure with FailRes");
 
 //Check if sub responsibilities have succeeded, then add success if all true. Success should only be checked when all tasks have completed and not failed
 +!checkIndividualSuccess(Res,[])[perform] : {True} <- +success(Res), +!updateProcess(Res,success)[perform];
@@ -121,7 +112,7 @@ processLoop[achieve]
 +!processLoop[achieve] : {B process(Res,checkDelegate), B delegate(Res,Ags), ~B waiting(Res,Ags)} <- prt("Delegating ", Res), +!delegate(Res,Ags)[perform];
 +!processLoop[achieve] : {B process(Res,checkDelegate), B delegate(Res,Ags), B waiting(Res,Ags)} <- prt("Waiting for reply ", Res, " from ", Ags),  +!updateProcess(Res,checkFailure)[perform];
 +!processLoop[achieve] : {B process(Res,checkDelegate)} <- prt("Not delegating ", Res), +!updateProcess(Res,actions)[perform];
-//Do an action from the Task associated with the Responsibility 
+///Do an action from the Task associated with the Responsibility 
 +!processLoop[achieve] : {B process(Res,actions), B res(Res,_,Task,_,_)} <- prt("Working on Actions ", Res), +!workOnActions(Task)[perform];
 +!processLoop[achieve] : {B process(Res,states), B res(Res,_,Task,_,_)} <- prt("Working on States ", Res), +!workOnStates(Task)[perform];
 +!processLoop[achieve] : {B process(Res,checkFailure)} <- prt("Checking failure ", Res), +!checkFailed(Res)[perform];
@@ -137,38 +128,26 @@ processLoop[achieve]
 //Received a delegated responsibility Example: assignment([ag1,ag2],safety)
 +.received(:tell, assignment(Assignee,Res)) : {True} <- -ready, +.lock, prt("Received Assignment"), +!incomingRes(Assignee,[Res])[perform], -.lock, +ready;
 //Received confirmation of delegation
-+.received(:tell, accepted(Res,Assignee)) : {~B delegated(Res,Lt)} <- +.lock, prt("Received first ", accepted(Res,Assignee)), +delegated(Res,[Assignee]), +!checkReceived(Res)[perform], -.lock;
-+.received(:tell, accepted(Res,Assignee)) : {B delegated(Res,Lt)} <- +.lock, prt("Received next ", accepted(Res,Assignee)), -delegated(Res,Lt), appendList([Assignee],Lt,Y), +delegated(Res,Y), +!checkReceived(Res)[perform], -.lock;
-+.received(:tell, finished(Res)) : {True} <- print("Received Finished");
++.received(:tell, accepted(Res,Assignee)) : {True} <- prt("Received ", accepted(Res,Assignee)), -waiting(Res,Assignee), +delegated(Res,Assignee);
 +.received(:tell, X) : {True} <- print(X), printstate, break;
 
-//Check all delegation received
-+!checkReceived(Res)[perform] : {B delegated(Res,ALt), B delegate(Res,Lt), B equalLength(ALt,Lt)} <- prt("All have responded"), -waiting(Res,Lt);
-+!checkReceived(Res)[perform] : {B delegated(Res,ALt), B delegate(Res,Lt), ~B equalLength(ALt,Lt)} <- prt("Still need a response");
-+!checkReceived(Res)[perform] : {B delegated(Res,ALt)} <- printstate, prt("Delegated ", Res, " to ", ALt), break;
-+!checkReceived(Res)[perform] : {B delegate(Res,ALt)} <- printstate, prt("Delegated ", Res, " to ", ALt), break;
-
 //Delegate a responsibility
-+!delegate(Res,Ags)[perform] : {True} <- prt("Delegating ", Res, " to ", Ags), +waiting(Res,Ags), +!sendDelegation(Res,Ags)[perform];
-
-+!sendDelegation(Res,[])[perform] : {True} <- prt("Sent all delegations");
-+!sendDelegation(Res,[Ag|T])[perform] : {True} <- prt("Sent delegation to ", Ag), .send(Ag, :tell, assignment(manager,Res)), +!sendDelegation(Res,T)[perform];
-+!sendDelegation(Res,Ag)[perform] : {True} <- prt("Single delegation to ", Ag), .send(Ag, :tell, assignment(manager,Res));
++!delegate(Res,Ags)[perform] : {True} <- prt("Delegating ", Res, " to ", Ags), .send(Ags, :tell, assignment(cleaner2,Res)), *sentRes(Res,Ags), -sentRes(Res,Ags), prt("Sent and received");
 
 //Report back
-+!reportSuccess(Res)[perform] : {B assignment(Assignee,Res,manager)} <- .send(Assignee, :tell, finished(Res));
++!reportSuccess(Res)[perform] : {B assignment(Assignee,Res,cleaner2)} <- .send(Assignee, :tell, finished(Res));
 +!reportSuccess(Res)[perform] : {True} <- prt("No assignee found");
-+!reportFailure(Res)[perform] : {B assignment(Assignee,Res,manager)} <- .send(Assignee, :tell, failed(Res));
++!reportFailure(Res)[perform] : {B assignment(Assignee,Res,cleaner2)} <- .send(Assignee, :tell, failed(Res));
 +!reportBack(Res)[perform] : {True} <- prt("Reporting back unfinished responsibility ", Res);
 
 //Tell assignee of acceptance
 +!informAssignment([], Res)[perform] : {True} <- prt("Informed all assignees");
-+!informAssignment([Assignee|T], Res)[perform] : {True} <- prt("Informing acceptance to ", Assignee), .send(Assignee, :tell, accepted(Res, manager)), +!informAssignment(T,Res)[perform];
++!informAssignment([Assignee|T], Res)[perform] : {True} <- prt("Informing acceptance to ", Assignee), .send(Assignee, :tell, accepted(Res, cleaner2)), +!informAssignment(T,Res)[perform];
 //Inform assignment single assignee
-+!informAssignment(Assignee, Res)[perform] : {True} <- prt("Informing single acceptance to ", Assignee), .send(Assignee, :tell, accepted(Res, manager));
++!informAssignment(Assignee, Res)[perform] : {True} <- prt("Informing single acceptance of ", Res, " to ", Assignee), .send(Assignee, :tell, accepted(Res, cleaner2));
 
 //Add Accepted Responsibility to list
-+!addAcceptedRes(Assignee, NewRes)[perform] : {B currentRes(Res), B res(NewRes,SubRes,_,_,_)} <- +.lock, prt("Accepting Responsibility ", NewRes), +assignment(Assignee,NewRes,manager), +!informAssignment(Assignee,Res)[perform], +!add([NewRes])[perform], -.lock;
++!addAcceptedRes(Assignee, NewRes)[perform] : {B currentRes(Res), B res(NewRes,SubRes,_,_,_)} <- +.lock, prt("Accepting Responsibility ", NewRes), +assignment(Assignee,NewRes,cleaner2), +!informAssignment(Assignee,NewRes)[perform], +!add([NewRes])[perform], -.lock;
 
 //Accepting or delegating responsibilities
 +!incomingRes(_, [])[perform] : {True} <- +.lock, prt("Processed all responsibilities"), -.lock;
@@ -177,5 +156,4 @@ processLoop[achieve]
 //Decide if to accept responsibility
 +!incomingRes(Assignee, [Res|T])[perform] : {B capacity(Res), B res(Res,Sub,_,_,_)} <- +.lock, prt("Chose To Accept ", Res), +!addAcceptedRes(Assignee, Res)[perform], +!incomingRes(Assignee, T)[perform], +!incomingRes(Assignee, Sub)[perform], -.lock;
 +!incomingRes(Assignee, [Res|T])[perform] : {~B capacity(Res)} <- +.lock, prt("Chose To Not Accept ", Res), +!incomingRes(Assignee, T)[perform], -.lock; //Should send message back
-
 

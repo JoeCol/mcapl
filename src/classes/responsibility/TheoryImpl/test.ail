@@ -9,3 +9,7 @@ mas.agent.1.builder = gwendolen.GwendolenAgentBuilder
 mas.agent.2.name = cleaner
 mas.agent.2.file = /src/classes/responsibility/TheoryImpl/cleaner.gwen
 mas.agent.2.builder = gwendolen.GwendolenAgentBuilder
+
+mas.agent.3.name = cleaner2
+mas.agent.3.file = /src/classes/responsibility/TheoryImpl/cleaner2.gwen
+mas.agent.3.builder = gwendolen.GwendolenAgentBuilder
