@@ -19,7 +19,7 @@ public class WorldCell
 	{
 		if (!hasDirt)
 		{
-			if (new Random().nextInt(1000) <= (changeOfDirt - 1))
+			if (new Random().nextInt(100000) <= (changeOfDirt - 1))
 			{
 				hasDirt = true;
 			}

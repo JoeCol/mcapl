@@ -512,6 +512,13 @@ public class CleaningWorld extends DefaultEnvironment implements MCAPLJobber
 			goToZone(agName, 5);
 			observeDirt(agName);
 			break;
+		case "isSafe":
+			break;
+		case "allRoomsWillBeObserved":
+			break;
+		default:
+			System.out.println("Not implemented: " + action);
+			break;
 		}
 		//No action is instant
 		return false;
