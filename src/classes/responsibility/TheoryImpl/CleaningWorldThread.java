@@ -150,7 +150,7 @@ public class CleaningWorldThread extends JPanel implements Runnable
 						g.fillRect(1+(x * widthOfCell), g.getFontMetrics().getHeight() + (y * heightOfCell), widthOfCell, heightOfCell);
 					}
 					g.setColor(Color.black);
-					g.drawString("("+ x + "," + y + ") Zone:" + world.getCell(x, y).getZoneNumber(), 2+(x * widthOfCell), (g.getFontMetrics().getHeight() * 2) + (y * heightOfCell));
+					g.drawString("("+ x + "," + y + ") Zone:" + world.getCell(x, y).getZoneID(), 2+(x * widthOfCell), (g.getFontMetrics().getHeight() * 2) + (y * heightOfCell));
 				}
 			}
 			

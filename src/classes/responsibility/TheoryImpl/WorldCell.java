@@ -7,7 +7,7 @@ public class WorldCell
 	private boolean hasDirt;
 	private boolean traversable;
 	private boolean occupied = false;
-	private int zoneNumber;
+	private char zoneID;
 
 	public boolean hasDirt() 
 	{
@@ -39,13 +39,13 @@ public class WorldCell
 	{
 		super();
 		traversable = false;
-		zoneNumber = 0;
+		zoneID = '0';
 	}
 	
-	public WorldCell(int zone)
+	public WorldCell(char zone)
 	{
-		zoneNumber = zone;
-		traversable = zone != 0;
+		zoneID = zone;
+		traversable = zone != '0';
 	}
 
 	public void setOccupied(boolean occupied) {
@@ -56,7 +56,7 @@ public class WorldCell
 		return traversable;
 	}
 
-	public int getZoneNumber() {
-		return zoneNumber;
+	public char getZoneID() {
+		return zoneID;
 	}
 }

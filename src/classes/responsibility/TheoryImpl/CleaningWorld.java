@@ -29,6 +29,7 @@ import ail.syntax.Message;
 import ail.syntax.NumberTerm;
 import ail.syntax.NumberTermImpl;
 import ail.syntax.Predicate;
+import ail.syntax.StringTerm;
 import ail.syntax.StringTermImpl;
 import ail.syntax.Term;
 import ail.syntax.Unifier;
@@ -53,7 +54,7 @@ public class CleaningWorld extends DefaultEnvironment implements MCAPLJobber
 	RoundRobinScheduler rrs = new RoundRobinScheduler();
 	ArrayList<UpdateToWorld> listeners = new ArrayList<UpdateToWorld>();
 	HashMap<String, Color> agentColours = new HashMap<String, Color>();
-	HashMap<Integer, ArrayList<Pair<Integer, Integer>>> zoneSquares = new HashMap<Integer, ArrayList<Pair<Integer, Integer>>>();
+	HashMap<Character, ArrayList<Pair<Integer, Integer>>> zoneSquares = new HashMap<Character, ArrayList<Pair<Integer, Integer>>>();
 	
 	HashMap<String, ArrayDeque<AgentAction>> agentActions = new HashMap<String, ArrayDeque<AgentAction>>();
 	HashMap<String, String> workingOn = new HashMap<String, String>();
@@ -243,11 +244,10 @@ public class CleaningWorld extends DefaultEnvironment implements MCAPLJobber
 			{
 				for (int x = 0; x < world[0].length; x++)
 				{
-					String lineChar = line.substring(x,x+1);
-					int zoneNum = Integer.parseInt(lineChar);
-					zoneSquares.putIfAbsent(zoneNum, new ArrayList<Pair<Integer, Integer>>());
-					zoneSquares.get(zoneNum).add(new Pair<Integer, Integer>(x,y));
-					world[y][x] = new WorldCell(zoneNum);
+					char zoneID = line.charAt(x);
+					zoneSquares.putIfAbsent(zoneID, new ArrayList<Pair<Integer, Integer>>());
+					zoneSquares.get(zoneID).add(new Pair<Integer, Integer>(x,y));
+					world[y][x] = new WorldCell(zoneID);
 				}
 				line = br.readLine();
 			}
@@ -331,10 +331,10 @@ public class CleaningWorld extends DefaultEnvironment implements MCAPLJobber
 	   			agentActions.get(agName).add(AgentAction.aa_observedirt);
 	   			break;
 	   		case "do_clean":
-	   			addCleaningActions(agName, (int)((NumberTerm)act.getTerm(0)).solve());
+	   			addCleaningActions(agName, ((StringTerm)act.getTerm(0)).getString().charAt(0));
 	   			break;
 	   		case "go_to_zone":
-	   			goToZone(agName, (int)((NumberTerm)act.getTerm(0)).solve());
+	   			goToZone(agName, ((StringTerm)act.getTerm(0)).getString().charAt(0));
 	   			break;
 	   		case "finishClean":
 	   			removePercept(agName, new Predicate("finished"));
@@ -473,43 +473,43 @@ public class CleaningWorld extends DefaultEnvironment implements MCAPLJobber
 		switch(action) //while debugging
 		{
 		case "clean1":
-			goToZone(agName, 1);
-			addCleaningActions(agName,1);
+			goToZone(agName, '1');
+			addCleaningActions(agName,'1');
 			break;
 		case "clean2":
-			goToZone(agName, 2);
-			addCleaningActions(agName,2);
+			goToZone(agName, '2');
+			addCleaningActions(agName,'2');
 			break;
 		case "clean3":
-			goToZone(agName, 3);
-			addCleaningActions(agName,3);
+			goToZone(agName, '3');
+			addCleaningActions(agName,'3');
 			break;
 		case "clean4":
-			goToZone(agName, 4);
-			addCleaningActions(agName,4);
+			goToZone(agName, '4');
+			addCleaningActions(agName,'4');
 			break;
 		case "clean5":
-			goToZone(agName, 5);
-			addCleaningActions(agName,5);
+			goToZone(agName, '5');
+			addCleaningActions(agName,'5');
 			break;
 		case "observe1":
-			goToZone(agName, 1);
+			goToZone(agName, '1');
 			observeDirt(agName);
 			break;
 		case "observe2":
-			goToZone(agName, 2);
+			goToZone(agName, '2');
 			observeDirt(agName);
 			break;
 		case "observe3":
-			goToZone(agName, 3);
+			goToZone(agName, '3');
 			observeDirt(agName);
 			break;
 		case "observe4":
-			goToZone(agName, 4);
+			goToZone(agName, '4');
 			observeDirt(agName);
 			break;
 		case "observe5":
-			goToZone(agName, 5);
+			goToZone(agName, '5');
 			observeDirt(agName);
 			break;
 		case "isSafe":
@@ -524,7 +524,7 @@ public class CleaningWorld extends DefaultEnvironment implements MCAPLJobber
 		return false;
 	}
 
-	private void addCleaningActions(String agName, int zone) 
+	private void addCleaningActions(String agName, char zone) 
 	{
 		//Assumes correct starting place (i.e. go to zone is called first)
 		ArrayList<Pair<Integer, Integer>> allSquares = zoneSquares.get(zone);
@@ -547,7 +547,7 @@ public class CleaningWorld extends DefaultEnvironment implements MCAPLJobber
 	private int observeDirt(String agName) 
 	{
 		//Get zone for agent
-		int zone = 0;
+		char zone = 0;
 		for (AILAgent a : getAgents())
 		{
 			if (agName.equals(a.getAgName()))
@@ -558,7 +558,7 @@ public class CleaningWorld extends DefaultEnvironment implements MCAPLJobber
 					Literal l = it.next();
 					if (l.getFunctor().equals("zone"))
 					{
-						zone = (int)((NumberTerm)l.getTerm(0)).solve();
+						zone = ((StringTerm)l.getTerm(0)).getString().charAt(0);
 						break;
 					}
 				}
@@ -570,7 +570,7 @@ public class CleaningWorld extends DefaultEnvironment implements MCAPLJobber
 		{
 			for (WorldCell cell : row)
 			{
-				if (cell.getZoneNumber() == zone && cell.hasDirt())
+				if (cell.getZoneID() == zone && cell.hasDirt())
 				{
 					perceptAdds.add(new Pair<String, Predicate>(agName, p));
 					perceptAdds.add(new Pair<String, Predicate>(agName, new Predicate("observed")));
@@ -585,7 +585,7 @@ public class CleaningWorld extends DefaultEnvironment implements MCAPLJobber
 
 
 	//Add move actions to agentactions stack
-	private void goToZone(String agName, int zone) 
+	private void goToZone(String agName, char zone) 
 	{
 		//get route
 		ArrayDeque<AgentAction> moveActions = routeToZones.actionsToZone(world, getAgentLocation(agName), zoneSquares.get(zone).get(0));
@@ -624,13 +624,13 @@ public class CleaningWorld extends DefaultEnvironment implements MCAPLJobber
 			
 			//Update zone belief
 			ArrayList<Term> zoneTerms = new ArrayList<Term>();
-			zoneTerms.add(new NumberTermImpl(getCell(x,y).getZoneNumber()));
+			zoneTerms.add(new StringTermImpl(String.valueOf(getCell(x,y).getZoneID())));
 			Predicate p1 = new Predicate("zone");
 			p1.setTerms(zoneTerms);
 			perceptRems.add(new Pair<String, Predicate>(agName, p1));
 			
 			ArrayList<Term> zoneUpdateTerms = new ArrayList<Term>();
-			zoneUpdateTerms.add(new NumberTermImpl(getCell(newX, newY).getZoneNumber()));
+			zoneUpdateTerms.add(new StringTermImpl(String.valueOf(getCell(x,y).getZoneID())));
 			Predicate up1 = new Predicate("zone");
 			up1.setTerms(zoneUpdateTerms);
 			up1.setTerms(zoneUpdateTerms);
