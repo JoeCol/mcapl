@@ -142,7 +142,7 @@ public class ResponsibilityGUI {
 		JButton btnNewButton = new JButton("Start");
 		panel.add(btnNewButton);
 		
-		JLabel lblNewLabel = new JLabel("Simulation delay");
+		JLabel lblNewLabel = new JLabel("Action delay");
 		panel.add(lblNewLabel);
 		
 		JSlider slider = new JSlider();
@@ -158,6 +158,7 @@ public class ResponsibilityGUI {
 		slider.setPaintTicks(true);
 		slider.setValue(0);
 		panel.add(slider);
+		
 		frmResponsibilityGwen.getContentPane().add(cwt, BorderLayout.CENTER);
 		
 		btnNewButton.addActionListener(new ActionListener() 

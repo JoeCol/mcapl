@@ -8,31 +8,29 @@ import javax.swing.JDialog;
 import javax.swing.JFileChooser;
 import javax.swing.JPanel;
 import javax.swing.border.EmptyBorder;
-import javax.swing.filechooser.FileFilter;
 import javax.swing.JLabel;
 import javax.swing.JSpinner;
-import java.awt.Component;
-import javax.swing.Box;
-import java.awt.GridLayout;
 import javax.swing.BoxLayout;
 import javax.swing.JTextField;
 import java.awt.event.ActionListener;
 import java.io.BufferedReader;
-import java.io.FileInputStream;
-import java.io.FileNotFoundException;
 import java.io.FileReader;
 import java.io.IOException;
 import java.awt.event.ActionEvent;
-import javax.swing.event.ChangeListener;
-import javax.swing.event.ChangeEvent;
 
 public class SettingsDialog extends JDialog {
 
+	/**
+	 * 
+	 */
+	private static final long serialVersionUID = 8101986934383656658L;
 	private final JPanel contentPanel = new JPanel();
 	private JSpinner spnWidth = new JSpinner();
 	private JSpinner spnHeight = new JSpinner();
+	private JSpinner spnSimSteps = new JSpinner();
+	private JSpinner spnDirtInterval = new JSpinner();
+	private JSpinner spnBadDirtInterval = new JSpinner();
 	private JTextField txtFileLocation = new JTextField();
-	private JSpinner spnDirt = new JSpinner();
 	public boolean updateSettings = false;
 	public Settings updatedSettings;
 
@@ -45,7 +43,7 @@ public class SettingsDialog extends JDialog {
 		setResizable(false);
 		setModal(true);
 		setTitle("Settings");
-		setBounds(100, 100, 450, 300);
+		setBounds(100, 100, 530, 350);
 		getContentPane().setLayout(new BorderLayout());
 		contentPanel.setBorder(new EmptyBorder(5, 5, 5, 5));
 		getContentPane().add(contentPanel, BorderLayout.CENTER);
@@ -81,6 +79,56 @@ public class SettingsDialog extends JDialog {
 				
 				panel.add(spnHeight);
 				spnHeight.setValue(settings.getHeightOfMap());
+			}
+		}
+		{
+			JPanel panel = new JPanel();
+			FlowLayout flowLayout = (FlowLayout) panel.getLayout();
+			flowLayout.setVgap(0);
+			flowLayout.setHgap(0);
+			flowLayout.setAlignment(FlowLayout.LEFT);
+			contentPanel.add(panel);
+			{
+				JLabel lblSimSteps = new JLabel("Simulation Steps");
+				panel.add(lblSimSteps);
+			}
+			{
+				
+				panel.add(spnSimSteps);
+				spnSimSteps.setValue(settings.getSimulationSteps());
+			}
+		}
+		{
+			JPanel panel = new JPanel();
+			FlowLayout flowLayout = (FlowLayout) panel.getLayout();
+			flowLayout.setVgap(0);
+			flowLayout.setHgap(0);
+			flowLayout.setAlignment(FlowLayout.LEFT);
+			contentPanel.add(panel);
+			{
+				JLabel lblDirtInterval = new JLabel("Dirt Interval");
+				panel.add(lblDirtInterval);
+			}
+			{
+				
+				panel.add(spnDirtInterval);
+				spnDirtInterval.setValue(settings.getDirtInterval());
+			}
+		}
+		{
+			JPanel panel = new JPanel();
+			FlowLayout flowLayout = (FlowLayout) panel.getLayout();
+			flowLayout.setVgap(0);
+			flowLayout.setHgap(0);
+			flowLayout.setAlignment(FlowLayout.LEFT);
+			contentPanel.add(panel);
+			{
+				JLabel lblBadDirtInterval = new JLabel("Bad Dirt Interval");
+				panel.add(lblBadDirtInterval);
+			}
+			{
+				panel.add(spnBadDirtInterval);
+				spnBadDirtInterval.setValue(settings.getBadDirtInterval());
 			}
 		}
 		{
@@ -139,22 +187,6 @@ public class SettingsDialog extends JDialog {
 			}
 		}
 		{
-			JPanel panel = new JPanel();
-			FlowLayout flowLayout = (FlowLayout) panel.getLayout();
-			flowLayout.setVgap(0);
-			flowLayout.setHgap(0);
-			flowLayout.setAlignment(FlowLayout.LEFT);
-			contentPanel.add(panel);
-			{
-				JLabel lblDirtApperanceChange = new JLabel("Dirt Apperance Chance");
-				panel.add(lblDirtApperanceChange);
-			}
-			{
-				panel.add(spnDirt);
-				spnDirt.setValue(settings.getDirtAppearanceChange());
-			}
-		}
-		{
 			JPanel buttonPane = new JPanel();
 			buttonPane.setLayout(new FlowLayout(FlowLayout.RIGHT));
 			getContentPane().add(buttonPane, BorderLayout.SOUTH);
@@ -165,8 +197,10 @@ public class SettingsDialog extends JDialog {
 						updateSettings = true;
 						settings.setHeightOfMap((int)spnHeight.getValue());
 						settings.setWidthOfMap((int)spnWidth.getValue());
-						settings.setDirtAppearanceChange((int)spnDirt.getValue());
 						settings.setWorldFileLocation(txtFileLocation.getText());
+						settings.setBadDirtInterval((int)spnBadDirtInterval.getValue());
+						settings.setDirtInterval((int)spnDirtInterval.getValue());
+						settings.setSimulationSteps((int)spnSimSteps.getValue());
 						dispose();
 					}
 				});

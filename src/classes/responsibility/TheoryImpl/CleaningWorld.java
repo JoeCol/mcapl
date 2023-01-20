@@ -49,6 +49,7 @@ public class CleaningWorld extends DefaultEnvironment implements MCAPLJobber
 	Routes routeToZones = new Routes();
 	volatile WorldCell[][] world;
 	int simulationDelay = 100;
+	int remainingSteps = 1;
 	Timer environmentTimer = new Timer();
 	Settings currentSettings;
 	RoundRobinScheduler rrs = new RoundRobinScheduler();
@@ -136,23 +137,13 @@ public class CleaningWorld extends DefaultEnvironment implements MCAPLJobber
 		{
 			//method to run through thread, delay is caused by timer
 			public void run()
-			{
-				//Each action to the environment gives a change at dirt.
-				for (int x = 0; x < world.length; x++)
-				{
-					for (int y = 0; y < world[x].length; y++)
-					{
-						world[x][y].setChangeOfDirt(currentSettings.getDirtAppearanceChange());
-					}
-				}
-				
+			{	
 				//Get ONE action from each agent
 				for (AILAgent a : getAgents())
 				{
 					ArrayDeque<AgentAction> actionStack = agentActions.get(a.getAgName());
 					if (!actionStack.isEmpty())
 					{
-						
 						AgentAction action = actionStack.pop();
 						Pair<Integer, Integer> agentLocation = getAgentLocation(a.getAgName());
 						switch (action)
@@ -238,6 +229,7 @@ public class CleaningWorld extends DefaultEnvironment implements MCAPLJobber
 		{
 			zoneSquares.clear();
 			world = new WorldCell[currentSettings.getHeightOfMap()][currentSettings.getWidthOfMap()];
+			remainingSteps = currentSettings.getSimulationSteps();
 			BufferedReader br = new BufferedReader(new FileReader(currentSettings.getWorldFileLocation()));
 			String line = br.readLine();
 			for (int y = 0; y < world.length; y++)
@@ -433,6 +425,7 @@ public class CleaningWorld extends DefaultEnvironment implements MCAPLJobber
 	   			System.out.print(agName + ": ");
 	   			System.out.println("Breakpoint");
 	   			break;
+	   		case "randomMove":
 	   		case "printstate":
 	   		case "print":
 	   		case "send":
@@ -640,8 +633,6 @@ public class CleaningWorld extends DefaultEnvironment implements MCAPLJobber
 		
 		
 	}
-	
-	
 
 	@Override
 	public int compareTo(MCAPLJobber o) 
@@ -674,6 +665,8 @@ public class CleaningWorld extends DefaultEnvironment implements MCAPLJobber
 		{
 			u.worldUpdate();
 		}
+		System.out.println("Remaining Steps = " + remainingSteps);
+		remainingSteps--;
 	}
 
 	@Override
@@ -684,8 +677,7 @@ public class CleaningWorld extends DefaultEnvironment implements MCAPLJobber
 	@Override
 	public boolean done()
 	{
-		//Always something to clean
-		return false;
+		return remainingSteps <= 0;
 	}
 
 	public int getHeight() 
@@ -716,5 +708,10 @@ public class CleaningWorld extends DefaultEnvironment implements MCAPLJobber
 	public void setSimulationDelay(int value) 
 	{
 		simulationDelay = value;
+	}
+
+	public int getRemainingSteps() 
+	{
+		return remainingSteps;
 	}
 }

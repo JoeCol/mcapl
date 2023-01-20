@@ -6,6 +6,10 @@ mas.agent.1.name = walker
 mas.agent.1.file = /src/classes/responsibility/TheoryImpl/randomwalk.gwen
 mas.agent.1.builder = gwendolen.GwendolenAgentBuilder
 
+mas.agent.2.name = walker2
+mas.agent.2.file = /src/classes/responsibility/TheoryImpl/randomwalk.gwen
+mas.agent.2.builder = gwendolen.GwendolenAgentBuilder
+
 //mas.agent.1.name = manager
 //mas.agent.1.file = /src/classes/responsibility/TheoryImpl/manager.gwen
 //mas.agent.1.builder = gwendolen.GwendolenAgentBuilder

@@ -123,7 +123,7 @@ public class CleaningWorldThread extends JPanel implements Runnable
 	public void paintComponent(Graphics g)
 	{
 		super.paintComponent(g);
-		g.drawString(java.time.ZonedDateTime.now().toString(),5,g.getFontMetrics().getHeight() - 5);
+		g.drawString("Remaining Steps: " + getRemainingSteps() + " " + java.time.ZonedDateTime.now().toString(),5,g.getFontMetrics().getHeight() - 5);
 		g.setColor(Color.BLACK);
 		if (world != null)
 		{
@@ -195,5 +195,17 @@ public class CleaningWorldThread extends JPanel implements Runnable
 	public void setSimulationDelay(int value) 
 	{
 		world.setSimulationDelay(value);
+	}
+
+	public int getRemainingSteps() 
+	{
+		if (world != null)
+		{
+			return world.getRemainingSteps();
+		}
+		else
+		{
+			return 0;
+		}
 	}
 }

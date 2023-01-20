@@ -8,21 +8,41 @@ public class Settings implements Serializable
 	String worldFileLocation;
 	int heightOfMap;
 	int widthOfMap;
-	int dirtAppearanceChange;
+	int simulationSteps;
+	int dirtInterval;
+	int badDirtInterval;
 	
 	public Settings()
 	{
 		heightOfMap = 10;
 		widthOfMap = 10;
-		dirtAppearanceChange = 6;
+		simulationSteps = 10000;
+		dirtInterval = 15;
+		badDirtInterval = 5;
 	}
 	
-	public String getWorldFileLocation() {
-		return worldFileLocation;
+	public int getSimulationSteps() {
+		return simulationSteps;
 	}
 
-	public void setWorldFileLocation(String worldFileLocation) {
-		this.worldFileLocation = worldFileLocation;
+	public void setSimulationSteps(int simulationSteps) {
+		this.simulationSteps = simulationSteps;
+	}
+
+	public int getDirtInterval() {
+		return dirtInterval;
+	}
+
+	public void setDirtInterval(int dirtInterval) {
+		this.dirtInterval = dirtInterval;
+	}
+
+	public int getBadDirtInterval() {
+		return badDirtInterval;
+	}
+
+	public void setBadDirtInterval(int badDirtInterval) {
+		this.badDirtInterval = badDirtInterval;
 	}
 
 	public int getHeightOfMap() {
@@ -41,12 +61,13 @@ public class Settings implements Serializable
 		this.widthOfMap = widthOfMap;
 	}
 
-	public int getDirtAppearanceChange() {
-		return dirtAppearanceChange;
+	public String getWorldFileLocation() {
+		return worldFileLocation;
 	}
 
-	public void setDirtAppearanceChange(int dirtAppearanceChange) {
-		this.dirtAppearanceChange = dirtAppearanceChange;
+	public void setWorldFileLocation(String text) {
+		this.worldFileLocation = text;
+		
 	}
 
 }
