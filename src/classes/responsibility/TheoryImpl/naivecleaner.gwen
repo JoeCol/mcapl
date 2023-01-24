@@ -1,0 +1,15 @@
+GWENDOLEN
+
+:name: naivecleaner
+
+:Initial Beliefs:
+
+:Initial Goals:
+cleanRooms[achieve]
+
+:Plans:
++!cleanRooms[achieve] : {B cleaning(X)} <-  *finished, prt("Finished cleaning ", X), remfin, -cleaning(X), -roomToClean(X), addBack(X);
++!cleanRooms[achieve] : {B walking(X)} <- *finished, prt("Got to zone ", X), remfin, -walking(X);
++!cleanRooms[achieve] : {B roomToClean(X), B zone(X)} <- printstate, prt("Cleaning zone ",X), clean(X), +cleaning(X);
++!cleanRooms[achieve] : {B roomToClean(X)} <- prt("Going to zone ",X), goToZone(X), +walking(X);
++!cleanRooms[achieve] : {True} <- getRoomToClean(X), prt("Going to clean zone ",X), +roomToClean(X);

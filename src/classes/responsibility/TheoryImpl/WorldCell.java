@@ -5,6 +5,7 @@ import java.util.Random;
 public class WorldCell
 {
 	private boolean hasDirt;
+	private boolean hasBadDirt;
 	private boolean traversable;
 	private boolean occupied = false;
 	private char zoneID;
@@ -13,17 +14,16 @@ public class WorldCell
 	{
 		return hasDirt;
 	}
-
-	//changeOfDirt as percentage 0-100
-	public void setChangeOfDirt(int changeOfDirt) 
+	
+	public boolean hasBadDirt()
 	{
-		if (!hasDirt)
-		{
-			if (new Random().nextInt(100000) <= (changeOfDirt - 1))
-			{
-				hasDirt = true;
-			}
-		}
+		return hasBadDirt;
+	}
+	
+	public void setDirty(boolean bad)
+	{
+		hasDirt = true;
+		hasBadDirt = bad;
 	}
 	
 	public void clean()

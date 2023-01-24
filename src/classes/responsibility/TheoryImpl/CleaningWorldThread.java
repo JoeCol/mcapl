@@ -30,6 +30,14 @@ import ail.util.AILConfig;
 import ajpf.MCAPLcontroller;
 import ajpf.util.AJPFLogger;
 
+interface tUpdateToDirtLevels{
+	void dirtLevelUpdate(int dirt, int badDirt);
+}
+
+interface tUpdateToSimulationTime{
+	void simulationTimeUpdate(int time);
+}
+
 public class CleaningWorldThread extends JPanel implements Runnable
 {
 	private CleaningWorld world;
