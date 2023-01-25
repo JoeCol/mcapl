@@ -33,11 +33,13 @@ import javax.swing.JTabbedPane;
 public class ResponsibilityGUI {
 
 	private JFrame frmResponsibilityGwen;
+	private JSlider slider = new JSlider();
 	private Thread cwtThread;
 	//private CleaningWorldThread cwt = new CleaningWorldThread("/src/classes/responsibility/TheoryImpl/responsibility.ail");
 	private CleaningWorldThread cwt = new CleaningWorldThread("/src/classes/responsibility/TheoryImpl/test.ail",300);
 	private boolean started = false;
 	private File settingsFile = new File("cleaning.settings");
+	public String saveDir = "";
 
 	/**
 	 * Launch the application.
@@ -50,6 +52,10 @@ public class ResponsibilityGUI {
 				try 
 				{
 					ResponsibilityGUI window = new ResponsibilityGUI();
+					if (args.length > 0)
+					{
+						window.saveDir = args[1];
+					}
 					window.frmResponsibilityGwen.setVisible(true);
 				} catch (Exception e) {
 					e.printStackTrace();
@@ -142,22 +148,45 @@ public class ResponsibilityGUI {
 		JButton btnNewButton = new JButton("Start");
 		panel.add(btnNewButton);
 		
-		JLabel lblNewLabel = new JLabel("Action delay");
-		panel.add(lblNewLabel);
-		
-		JSlider slider = new JSlider();
-		slider.setMinimum(300);
-		slider.setMaximum(3000);
+		JLabel lblNewLabel = new JLabel("Action time");
 		slider.addChangeListener(new ChangeListener() {
+			@Override
 			public void stateChanged(ChangeEvent e) {
-				cwt.setSimulationDelay(slider.getValue());
-			}
-		});
-		slider.setMajorTickSpacing(200);
+				lblNewLabel.setText("Action time: " + slider.getValue() + "ms");
+			}});
+		slider.setMinimum(50);
+		slider.setMaximum(3000);
+		slider.setValue(300);
+		slider.setMajorTickSpacing(50);
 		slider.setSnapToTicks(true);
 		slider.setPaintTicks(true);
-		slider.setValue(0);
 		panel.add(slider);
+		
+		panel.add(lblNewLabel);
+		
+		
+		
+		JLabel lblSimStep = new JLabel();
+		panel.add(lblSimStep);
+		cwt.addSimListeners(new UpdateToSimulationTime() {
+			@Override
+			public void simulationTimeUpdate(int time) {
+				lblSimStep.setText("Steps Remaining: " + time);
+				if (time <= 0)
+				{
+					cwt.sendStop(saveDir);
+				}
+			}});
+		
+		JLabel lblDirt = new JLabel();
+		panel.add(lblDirt);
+		
+		cwt.addDirtListeners(new UpdateToDirtLevels() {
+			@Override
+			public void dirtLevelUpdate(int dirt, int badDirt) {
+				lblDirt.setText("Dirt: " + dirt + " Bad Dirt: " + badDirt);
+				
+			}});
 		
 		frmResponsibilityGwen.getContentPane().add(cwt, BorderLayout.CENTER);
 		
@@ -165,10 +194,12 @@ public class ResponsibilityGUI {
 		{
 			public void actionPerformed(ActionEvent e) 
 			{
+				slider.setEnabled(!started);
 				if (!started)
 				{
 					//frmResponsibilityGwen.getContentPane().removeAll();
 					//cwt = new CleaningWorldThread("/src/classes/responsibility/responsibility.ail");
+					cwt.setSimulationDelay(slider.getValue());
 					cwtThread = new Thread(cwt);
 					cwtThread.start();
 					started = true;
@@ -176,7 +207,7 @@ public class ResponsibilityGUI {
 				}
 				else
 				{
-					cwt.sendStop();
+					cwt.sendStop(saveDir);
 					started = false;
 				}
 			}

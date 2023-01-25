@@ -63,7 +63,9 @@ public class CleaningWorld extends DefaultEnvironment implements MCAPLJobber
 	Timer environmentTimer = new Timer();
 	Settings currentSettings;
 	RoundRobinScheduler rrs = new RoundRobinScheduler();
-	ArrayList<UpdateToWorld> listeners = new ArrayList<UpdateToWorld>();
+	ArrayList<UpdateToWorld> worldListeners = new ArrayList<UpdateToWorld>();
+	ArrayList<UpdateToDirtLevels> dirtListeners = new ArrayList<UpdateToDirtLevels>();
+	ArrayList<UpdateToSimulationTime> simListeners = new ArrayList<UpdateToSimulationTime>();
 	HashMap<String, Color> agentColours = new HashMap<String, Color>();
 	HashMap<Character, ArrayList<Pair<Integer, Integer>>> zoneSquares = new HashMap<Character, ArrayList<Pair<Integer, Integer>>>();
 	
@@ -117,9 +119,18 @@ public class CleaningWorld extends DefaultEnvironment implements MCAPLJobber
 	
 	public void addWorldListeners(UpdateToWorld u)
 	{
-		listeners.add(u);
+		worldListeners.add(u);
 	}
 	
+	public void addDirtListeners(UpdateToDirtLevels u)
+	{
+		dirtListeners.add(u);
+	}
+	
+	public void addSimListeners(UpdateToSimulationTime u)
+	{
+		simListeners.add(u);
+	}
 	
 	@Override
 	public void init_after_adding_agents() 
@@ -214,13 +225,17 @@ public class CleaningWorld extends DefaultEnvironment implements MCAPLJobber
 					}
 				}
 				//Do dirt step
-				dirtNum = dirtNum++ % currentSettings.getDirtInterval();
+				dirtNum = (++dirtNum) % currentSettings.getDirtInterval();
 				if (dirtNum == 0)
 				{
-					badDirtNum = badDirtNum++ % currentSettings.getBadDirtInterval();
+					badDirtNum = (++badDirtNum) % currentSettings.getBadDirtInterval();
 					addDirt(badDirtNum == 0);
 				}
 				remainingSteps--;
+				for (UpdateToSimulationTime u : simListeners)
+				{
+					u.simulationTimeUpdate(remainingSteps);
+				}
 			}
 
 			
@@ -236,6 +251,10 @@ public class CleaningWorld extends DefaultEnvironment implements MCAPLJobber
 		totalDirt++;
 		if (bad) {totalBadDirt++;}
 		dirtRecord.addRecord(remainingSteps, totalDirt, totalBadDirt);
+		for (UpdateToDirtLevels u : dirtListeners)
+		{
+			u.dirtLevelUpdate(totalDirt, totalBadDirt);
+		}
 	}
 
 	public Pair<Integer, Integer> getAgentLocation(String agName) 
@@ -665,9 +684,14 @@ public class CleaningWorld extends DefaultEnvironment implements MCAPLJobber
 			}
 			totalDirt--;
 			possibleDirtLocations.add(new Pair<Integer,Integer>(x,y));
+			dirtRecord.addRecord(remainingSteps, totalDirt, totalBadDirt);
+			for (UpdateToDirtLevels u : dirtListeners)
+			{
+				u.dirtLevelUpdate(totalDirt, totalBadDirt);
+			}
 		}
 		getCell(x, y).clean();
-		dirtRecord.addRecord(remainingSteps, totalDirt, totalBadDirt);
+		
 	}
 	
 	//Change environment percepts
@@ -741,7 +765,7 @@ public class CleaningWorld extends DefaultEnvironment implements MCAPLJobber
 			currentState = Process.p_updatedPercept;
 		}
 		//Update GUI
-		for (UpdateToWorld u : listeners)
+		for (UpdateToWorld u : worldListeners)
 		{
 			u.worldUpdate();
 		}
@@ -791,5 +815,11 @@ public class CleaningWorld extends DefaultEnvironment implements MCAPLJobber
 	public int getRemainingSteps() 
 	{
 		return remainingSteps;
+	}
+
+	public void save(String saveDir) 
+	{
+		dirtRecord.saveToFile(saveDir);
+		
 	}
 }

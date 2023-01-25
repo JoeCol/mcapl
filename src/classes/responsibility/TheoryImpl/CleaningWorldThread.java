@@ -9,6 +9,7 @@ import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.Date;
 import java.util.Iterator;
 import java.awt.Graphics;
@@ -30,20 +31,14 @@ import ail.util.AILConfig;
 import ajpf.MCAPLcontroller;
 import ajpf.util.AJPFLogger;
 
-interface tUpdateToDirtLevels{
-	void dirtLevelUpdate(int dirt, int badDirt);
-}
-
-interface tUpdateToSimulationTime{
-	void simulationTimeUpdate(int time);
-}
-
 public class CleaningWorldThread extends JPanel implements Runnable
 {
 	private CleaningWorld world;
 	private String configfile;
 	private MCAPLcontroller mccontrol;
 	private MAS mas;
+	ArrayList<UpdateToDirtLevels> dirtListeners = new ArrayList<UpdateToDirtLevels>();
+	ArrayList<UpdateToSimulationTime> simListeners = new ArrayList<UpdateToSimulationTime>();
 	
 	private int startingDelay;
 	@Override
@@ -61,6 +56,28 @@ public class CleaningWorldThread extends JPanel implements Runnable
 				repaint();
 			}
 	
+		});
+		
+		world.addDirtListeners(new UpdateToDirtLevels()
+		{
+			@Override
+			public void dirtLevelUpdate(int dirt, int badDirt) {
+				for (UpdateToDirtLevels u : dirtListeners)
+				{
+					u.dirtLevelUpdate(dirt, badDirt);
+				}	
+			}	
+		});
+		
+		world.addSimListeners(new UpdateToSimulationTime()
+		{
+			@Override
+			public void simulationTimeUpdate(int time) {
+				for (UpdateToSimulationTime u : simListeners)
+				{
+					u.simulationTimeUpdate(time);
+				}
+			}	
 		});
 		
 		GroundPredSets.clear();
@@ -127,11 +144,21 @@ public class CleaningWorldThread extends JPanel implements Runnable
 		//Grid Layout goes for y number of rows, then x number of columns
 	}
 	
+	public void addDirtListeners(UpdateToDirtLevels u)
+	{
+		dirtListeners.add(u);
+	}
+	
+	public void addSimListeners(UpdateToSimulationTime u)
+	{
+		simListeners.add(u);
+	}
+	
 	@Override
 	public void paintComponent(Graphics g)
 	{
 		super.paintComponent(g);
-		g.drawString("Remaining Steps: " + getRemainingSteps() + " " + java.time.ZonedDateTime.now().toString(),5,g.getFontMetrics().getHeight() - 5);
+		g.drawString(java.time.ZonedDateTime.now().toString(),5,g.getFontMetrics().getHeight() - 5);
 		g.setColor(Color.BLACK);
 		if (world != null)
 		{
@@ -195,14 +222,15 @@ public class CleaningWorldThread extends JPanel implements Runnable
 	}
 
 
-	public void sendStop() 
+	public void sendStop(String saveDir) 
 	{
-		mccontrol.stop();		
+		world.save(saveDir);
+		mccontrol.stop();
 	}
 
 	public void setSimulationDelay(int value) 
 	{
-		world.setSimulationDelay(value);
+		startingDelay = value;
 	}
 
 	public int getRemainingSteps() 

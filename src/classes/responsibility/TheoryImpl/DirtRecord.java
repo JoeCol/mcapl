@@ -52,16 +52,16 @@ public class DirtRecord {
 		allRecords.add(new Record(time, dirtLevel, badDirtLevel));
 	}
 	
-	public void saveToFile()
+	public void saveToFile(String directory)
 	{
 		String filename = "DirtLevels_";
 		int fileNo = 1;
-		while (Files.exists(Paths.get(filename + fileNo + ".csv")))
+		while (Files.exists(Paths.get(directory + "\\" + filename + fileNo + ".csv")))
 		{
 			fileNo++;
 		}
 		try {
-			FileWriter fw = new FileWriter(filename + fileNo + ".csv");
+			FileWriter fw = new FileWriter(directory + "\\" + filename + fileNo + ".csv");
 			fw.write("time,dirtLevel,badDirtLevel" + System.lineSeparator());
 			for (Record r : allRecords)
 			{
