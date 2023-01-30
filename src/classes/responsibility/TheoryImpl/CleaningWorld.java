@@ -8,6 +8,7 @@ import java.io.FileNotFoundException;
 import java.io.FileReader;
 import java.io.IOException;
 import java.io.ObjectInputStream;
+import java.io.RandomAccessFile;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Deque;
@@ -76,7 +77,6 @@ public class CleaningWorld extends DefaultEnvironment implements MCAPLJobber
 	ConcurrentLinkedQueue<Pair<String, Predicate>> perceptRems = new ConcurrentLinkedQueue<Pair<String, Predicate>>();
 	
 	Random r = new Random();
-	File settingsFile = new File("cleaning.settings");
 	
 	//Variables for naive cleaner
 	ArrayDeque<Character> naiveQueue = new ArrayDeque<Character>();
@@ -88,30 +88,7 @@ public class CleaningWorld extends DefaultEnvironment implements MCAPLJobber
 	int totalBadDirt = 0;
 	ArrayList<Pair<Integer,Integer>> possibleDirtLocations = new ArrayList<Pair<Integer,Integer>>();
 	DirtRecord dirtRecord = new DirtRecord();
-	
-	
-	public void loadSettings()
-	{
-		if (settingsFile.exists())
-		{
-			ObjectInputStream is;
-			try {
-				is = new ObjectInputStream(new FileInputStream(settingsFile));
-				currentSettings = (Settings)is.readObject();
-			} catch (FileNotFoundException e) {
-				// TODO Auto-generated catch block
-				e.printStackTrace();
-			} catch (IOException e) {
-				// TODO Auto-generated catch block
-				e.printStackTrace();
-			} catch (ClassNotFoundException e) {
-				// TODO Auto-generated catch block
-				e.printStackTrace();
-			}
-			
-		}
-	}
-	
+
 	public Settings getSettings()
 	{
 		return currentSettings;
@@ -177,41 +154,44 @@ public class CleaningWorld extends DefaultEnvironment implements MCAPLJobber
 					{
 						AgentAction action = actionStack.pop();
 						Pair<Integer, Integer> agentLocation = getAgentLocation(a.getAgName());
-						switch (action)
+						if (agentLocation._1 != -1)
 						{
-						case aa_clean:
-							clean(agentLocation._1, agentLocation._2); 
-							break;
-						case aa_movedown:
-							moveAgent(a.getAgName(), agentLocation._1, agentLocation._2, agentLocation._1, agentLocation._2 + 1);
-							break;
-						case aa_moveleft:
-							moveAgent(a.getAgName(), agentLocation._1, agentLocation._2, agentLocation._1 - 1, agentLocation._2);
-							break;
-						case aa_moveright:
-							moveAgent(a.getAgName(), agentLocation._1, agentLocation._2, agentLocation._1 + 1, agentLocation._2);
-							break;
-						case aa_moveup:
-							moveAgent(a.getAgName(), agentLocation._1, agentLocation._2, agentLocation._1, agentLocation._2 - 1);
-							break;
-						case aa_movedownleft:
-							moveAgent(a.getAgName(), agentLocation._1, agentLocation._2, agentLocation._1 - 1, agentLocation._2 + 1);
-							break;
-						case aa_movedownright:
-							moveAgent(a.getAgName(), agentLocation._1, agentLocation._2, agentLocation._1 + 1, agentLocation._2 + 1);
-							break;
-						case aa_moveupleft:
-							moveAgent(a.getAgName(), agentLocation._1, agentLocation._2, agentLocation._1 - 1, agentLocation._2 - 1);
-							break;
-						case aa_moveupright:
-							moveAgent(a.getAgName(), agentLocation._1, agentLocation._2, agentLocation._1 + 1, agentLocation._2 - 1);
-							break;
-						case aa_observedirt:
-							observeDirt(a.getAgName());
-							break;
-						case aa_finish:
-							perceptAdds.add(new Pair<String, Predicate>(a.getAgName(), new Predicate("finished")));
-							break;
+							switch (action)
+							{
+							case aa_clean:
+								clean(agentLocation._1, agentLocation._2); 
+								break;
+							case aa_movedown:
+								moveAgent(a.getAgName(), agentLocation._1, agentLocation._2, agentLocation._1, agentLocation._2 + 1);
+								break;
+							case aa_moveleft:
+								moveAgent(a.getAgName(), agentLocation._1, agentLocation._2, agentLocation._1 - 1, agentLocation._2);
+								break;
+							case aa_moveright:
+								moveAgent(a.getAgName(), agentLocation._1, agentLocation._2, agentLocation._1 + 1, agentLocation._2);
+								break;
+							case aa_moveup:
+								moveAgent(a.getAgName(), agentLocation._1, agentLocation._2, agentLocation._1, agentLocation._2 - 1);
+								break;
+							case aa_movedownleft:
+								moveAgent(a.getAgName(), agentLocation._1, agentLocation._2, agentLocation._1 - 1, agentLocation._2 + 1);
+								break;
+							case aa_movedownright:
+								moveAgent(a.getAgName(), agentLocation._1, agentLocation._2, agentLocation._1 + 1, agentLocation._2 + 1);
+								break;
+							case aa_moveupleft:
+								moveAgent(a.getAgName(), agentLocation._1, agentLocation._2, agentLocation._1 - 1, agentLocation._2 - 1);
+								break;
+							case aa_moveupright:
+								moveAgent(a.getAgName(), agentLocation._1, agentLocation._2, agentLocation._1 + 1, agentLocation._2 - 1);
+								break;
+							case aa_observedirt:
+								observeDirt(a.getAgName());
+								break;
+							case aa_finish:
+								perceptAdds.add(new Pair<String, Predicate>(a.getAgName(), new Predicate("finished")));
+								break;
+							}
 						}
 						//Update agent beliefs
 						//Get actions from environment thread
@@ -279,18 +259,26 @@ public class CleaningWorld extends DefaultEnvironment implements MCAPLJobber
 		return new Pair<Integer, Integer>(-1,-1);
 	}
 
-	public CleaningWorld()
+	public CleaningWorld(int simSteps, int dirtInt, int badDirtInt, String worldLoc)
 	{
-		loadSettings();
+		currentSettings = new Settings(0, 0, simSteps, dirtInt, badDirtInt, worldLoc);
 		try
 		{
 			zoneSquares.clear();
-			world = new WorldCell[currentSettings.getHeightOfMap()][currentSettings.getWidthOfMap()];
 			remainingSteps = currentSettings.getSimulationSteps();
-			BufferedReader br = new BufferedReader(new FileReader(currentSettings.getWorldFileLocation()));
-			String line = br.readLine();
+			RandomAccessFile fr = new RandomAccessFile(currentSettings.getWorldFileLocation(), "r");
+			String line = fr.readLine();
+			currentSettings.setWidthOfMap(line.length());
+			int height = 1;
+			while (fr.readLine() != null) {height++;}
+			currentSettings.setHeightOfMap(height);
+			fr.seek(0);
+			
+			world = new WorldCell[currentSettings.getHeightOfMap()][currentSettings.getWidthOfMap()];
+			
 			for (int y = 0; y < world.length; y++)
 			{
+				line = fr.readLine();
 				for (int x = 0; x < world[0].length; x++)
 				{
 					char zoneID = line.charAt(x);
@@ -302,16 +290,15 @@ public class CleaningWorld extends DefaultEnvironment implements MCAPLJobber
 					}
 					world[y][x] = new WorldCell(zoneID);
 				}
-				line = br.readLine();
 			}
-			for (int y = 0; y < getHeight(); y++)
+			/*for (int y = 0; y < getHeight(); y++)
 			{
 				for (int x = 0; x < getWidth(); x++)
 				{
 					System.out.print(getCell(x,y).getZoneID());
 				}
 				System.out.println();
-			}
+			}*/
 			//Add zones for naive cleaner
 			for (char zoneID : zoneSquares.keySet())
 			{
@@ -329,7 +316,7 @@ public class CleaningWorld extends DefaultEnvironment implements MCAPLJobber
 	
 	public Unifier executeAction(String agName, Action act) throws AILexception {
 	   	Unifier theta = super.executeAction(agName, act);
-	   	System.out.println(agName + ": executes:" + act.fullstring());
+	   	//System.out.println(agName + ": executes:" + act.fullstring());
   		//Should only place actions onto agentaction stack
 	   	switch (act.getFunctor())
 	   	{
@@ -414,7 +401,6 @@ public class CleaningWorld extends DefaultEnvironment implements MCAPLJobber
 	   			addCleaningActions(agName, ((StringTerm)act.getTerm(0)).getString().charAt(0));
 	   			break;
 	   		case "goToZone":
-	   			System.out.println("gotozone action");
 	   			goToZone(agName, ((StringTerm)act.getTerm(0)).getString().charAt(0));
 	   			break;
 	   		case "getCared":
@@ -522,7 +508,7 @@ public class CleaningWorld extends DefaultEnvironment implements MCAPLJobber
 	   		default:
 	   			System.out.println(act.getFunctor() + " has not been implemented");
 	   	}
-	   	System.out.println(agName + ":" + agentActions.get(agName).toString());
+	   	//System.out.println(agName + ":" + agentActions.get(agName).toString());
     	return theta;
     }
 	
@@ -624,7 +610,7 @@ public class CleaningWorld extends DefaultEnvironment implements MCAPLJobber
 		agentActions.get(agName).addAll(actions);
 	}
 
-	private int observeDirt(String agName) 
+	private void observeDirt(String agName) 
 	{
 		//Get zone for agent
 		char zone = 0;
@@ -644,23 +630,49 @@ public class CleaningWorld extends DefaultEnvironment implements MCAPLJobber
 				}
 			}
 		}
-		String dirtBelief = "dirt_" + zone;
-		Predicate p = new Predicate(dirtBelief);
+		String dirtBelief = "dirt";
+		String badDirtBelief = "badDirt";
+		Predicate badDirt = new Predicate(badDirtBelief);
+		badDirt.addTerm(new StringTermImpl(String.valueOf(zone)));
+		Predicate dirt = new Predicate(dirtBelief);
+		dirt.addTerm(new StringTermImpl(String.valueOf(zone)));
+		boolean hasDirt = false;
+		boolean hasBadDirt = false;
 		for (WorldCell[] row : world)
 		{
 			for (WorldCell cell : row)
 			{
-				if (cell.getZoneID() == zone && cell.hasDirt())
+				if (cell.getZoneID() == zone)
 				{
-					perceptAdds.add(new Pair<String, Predicate>(agName, p));
-					perceptAdds.add(new Pair<String, Predicate>(agName, new Predicate("observed")));
-					return 1;
+					if (cell.hasBadDirt())
+					{
+						hasDirt = true;
+						hasBadDirt = true;
+						break;
+					}
+					else if (cell.hasDirt())
+					{
+						hasDirt = true;
+					}
 				}
 			}
 		}
-		perceptRems.add(new Pair<String, Predicate>(agName, p));
-		perceptAdds.add(new Pair<String, Predicate>(agName, new Predicate("observed")));
-		return 0;//No dirty, 0 is false
+		if (hasDirt)
+		{
+			perceptAdds.add(new Pair<String, Predicate>(agName, dirt));
+		}
+		else
+		{
+			perceptRems.add(new Pair<String, Predicate>(agName, dirt));
+		}
+		if (hasBadDirt)
+		{
+			perceptAdds.add(new Pair<String, Predicate>(agName, badDirt));
+		}
+		else
+		{
+			perceptRems.add(new Pair<String, Predicate>(agName, badDirt));
+		}
 	}
 
 
@@ -668,7 +680,6 @@ public class CleaningWorld extends DefaultEnvironment implements MCAPLJobber
 	private void goToZone(String agName, char zone) 
 	{
 		//get route
-		System.out.println("Going to zone: " + zone);
 		ArrayDeque<AgentAction> moveActions = routeToZones.actionsToZone(world, getAgentLocation(agName), zoneSquares.get(zone).get(0));
 		moveActions.add(AgentAction.aa_finish);
 		agentActions.get(agName).addAll(moveActions);
@@ -820,6 +831,5 @@ public class CleaningWorld extends DefaultEnvironment implements MCAPLJobber
 	public void save(String saveDir) 
 	{
 		dirtRecord.saveToFile(saveDir);
-		
 	}
 }

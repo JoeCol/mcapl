@@ -41,10 +41,14 @@ public class CleaningWorldThread extends JPanel implements Runnable
 	ArrayList<UpdateToSimulationTime> simListeners = new ArrayList<UpdateToSimulationTime>();
 	
 	private int startingDelay;
+	private int simSteps;
+	private int dirtInt;
+	private int badDirtInt;
+	private String worldLoc;
 	@Override
 	public void run() {
 		
-		world = new CleaningWorld();
+		world = new CleaningWorld(simSteps, dirtInt, badDirtInt, worldLoc);
 		world.setSimulationDelay(startingDelay);
 		setLayout(new GridLayout(world.getHeight(), world.getWidth(), 0, 0));
 		world.addWorldListeners(new UpdateToWorld()
@@ -89,7 +93,7 @@ public class CleaningWorldThread extends JPanel implements Runnable
 	
 		// Create the initial state of the multi-agent program.
 		mas = AILSetup(config, mccontrol);
-		System.out.println(mccontrol.getScheduler().toString());
+		//System.out.println(mccontrol.getScheduler().toString());
 		
 		// Begin!
 		mccontrol.begin(); 
@@ -136,8 +140,12 @@ public class CleaningWorldThread extends JPanel implements Runnable
 		return mas;
 	}
 	
-	public CleaningWorldThread(String config, int delay)
+	public CleaningWorldThread(String config, int delay, int _simSteps, int _dirtInt, int _badDirtInt, String _worldLoc)
 	{
+		simSteps = _simSteps;
+		dirtInt = _dirtInt;
+		badDirtInt = _badDirtInt;
+		worldLoc = _worldLoc;
 		startingDelay = delay;
 		configfile = config;
 		setDoubleBuffered(true);
@@ -179,9 +187,16 @@ public class CleaningWorldThread extends JPanel implements Runnable
 						g.setColor(Color.white);
 						g.fillRect(1+(x * widthOfCell), g.getFontMetrics().getHeight() + (y * heightOfCell), widthOfCell, heightOfCell);
 					}
-					else //No dirt
+					else // dirt
 					{
-						g.setColor(Color.lightGray);
+						if (world.getCell(x, y).hasBadDirt())
+						{
+							g.setColor(Color.red);
+						}
+						else
+						{
+							g.setColor(Color.lightGray);
+						}
 						g.fillRect(1+(x * widthOfCell), g.getFontMetrics().getHeight() + (y * heightOfCell), widthOfCell, heightOfCell);
 					}
 					g.setColor(Color.black);

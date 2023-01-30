@@ -27,12 +27,6 @@ capacity(safety)
 capacity(observe)
 capacity(clean)
 
-//Working on task/res order
-doAll
-//doOne
-//doRandomOne
-cleanup(no)
-
 //Current Responsibilities
 currentRes([])
 //Current Working Task
@@ -60,7 +54,6 @@ processLoop[achieve]
 +!test2[perform] : {B equalLength([a,b,c],[l,b,c])} <- prt("equal length works on 3 length"), +!test3[perform];
 +!test3[perform] : {~B equalLength([a,b,c,d],[l,b,c])} <- prt("equal length works on not belief"); 
  
-//New Version
 //Update process
 +!updateProcess(Res,State)[perform] : {B process(PRes, PState)} <- -process(PRes, PState), +process(Res, State);
 //Reset completed actions and states

@@ -12,13 +12,14 @@ public class Settings implements Serializable
 	int dirtInterval;
 	int badDirtInterval;
 	
-	public Settings()
+	public Settings(int height, int width, int simSteps, int dirtInt, int badDirtInt, String worldLoc)
 	{
-		heightOfMap = 10;
-		widthOfMap = 10;
-		simulationSteps = 10000;
-		dirtInterval = 15;
-		badDirtInterval = 5;
+		heightOfMap = height;
+		widthOfMap = width;
+		simulationSteps = simSteps;
+		dirtInterval = dirtInt;
+		badDirtInterval = badDirtInt;
+		worldFileLocation = worldLoc;
 	}
 	
 	public int getSimulationSteps() {
