@@ -4,16 +4,18 @@ GWENDOLEN
 
 :Initial Beliefs:
 //Possible Tasks task(name, [goals/actions], [statesOfTheWorld])
-task(report, [reportToHuman], [])
-task(safety, [], [isSafe])
-task(clean, [clean1,clean2,clean3,clean4,clean5], [])
-task(observer, [observe1,observe2,observe3,observe4,observe5], [allRoomsWillBeObserved])
+task(ensureLowBadDirt,[],[noMoreThan5Dirt])
+task(observer, [observe1,observe2,observe3,observe4,observe5], [])
+task(cleaner, [clean1,clean2,clean3,clean4,clean5],[])
+task(reporter, [reportToHuman], [])
  
 //Possible Responsibilities res(name, [subres], task, [failres], {oneshot,repeat})
-res(report, [], report, [], oneshot)
-res(safety, [clean, observe], safety, [report], repeat)
-res(clean, [], clean, [], repeat)
-res(observe, [], observer, [], repeat) 
+res(janitorial,[safety,cleanliness],[],[], repeat)
+res(safety,[],[ensureLowBadDirt],[report],repeat)
+res(cleanliness,[observe,clean],[],repeat)
+res(observe, [], observer, [], repeat)
+res(clean, [], cleaner, [], repeat)
+res(report, [], reporter, [], oneshot)
 
 //care values
 care(clean,2)
@@ -22,10 +24,12 @@ care(observe,3)
 care(report,10)
 
 //Capacity - In essence pre-computed
-capacity(report)
+capacity(janitorial)
 capacity(safety)
+capacity(cleanliness)
 capacity(observe)
 capacity(clean)
+capacity(report)
 
 //Current Responsibilities
 currentRes([])
@@ -43,6 +47,9 @@ delegate(clean,[cleaner,cleaner2])
 :Reasoning Rules:
 equalLength([],[]);
 equalLength([X|T],[Y|P]) :- equalLength(T,P);
+
+getCare(X,Y) :- ~badDirt(P), care(X,Y);
+getCare(clean,8) :- badDirt(P);
 
 :Initial Goals:
 processLoop[achieve]
