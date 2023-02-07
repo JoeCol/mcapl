@@ -138,8 +138,13 @@ public class CleaningWorld extends DefaultEnvironment implements MCAPLJobber
 		ListTermImpl lt = new ListTermImpl();
 		lt.add(new Predicate("initial"));
 		msgPred.addTerm(lt);
-		msgPred.addTerm(new Predicate("safety"));
-		addMessage("manager", new Message(1, "initial", "manager", msgPred));
+		msgPred.addTerm(new Predicate("report"));
+		addMessage("cleaner1", new Message(1, "initial", "cleaner1", msgPred));
+		
+		Predicate msgClean = new Predicate("assignment");
+		msgClean.addTerm(lt);
+		msgClean.addTerm(new Predicate("cleanF"));
+		addMessage("cleaner1", new Message(1, "initial", "cleaner1", msgClean));
 		
 		environmentTimer.scheduleAtFixedRate(new TimerTask()
 		{
@@ -367,8 +372,8 @@ public class CleaningWorld extends DefaultEnvironment implements MCAPLJobber
 	   			irList.unifies(act.getTerm(1), theta);
 	   			break;
 	   		case "removeList":
-	   			ListTerm currList = (ListTerm)act.getTerm(0);
-	   			ListTerm listToRem = (ListTerm)act.getTerm(1);
+	   			ListTerm listToRem = (ListTerm)act.getTerm(0);
+	   			ListTerm currList = (ListTerm)act.getTerm(1);
 	   			currList.removeAll(listToRem);
 	   			currList.unifies(act.getTerm(2), theta);
 	   			break;
@@ -487,11 +492,10 @@ public class CleaningWorld extends DefaultEnvironment implements MCAPLJobber
 	   			}
 	   			System.out.println();
 	   			break;
-	   		case "do":
-	   			Term action = act.getTerm(0);
-	   			Boolean actionFinished = doAction(action.toString(),agName);
+	   		case "getDone":
+	   			Boolean actionFinished = checkDone(agName);
 	   			Predicate finished = new Predicate(actionFinished.toString());
-	   			finished.unifies(act.getTerm(1), theta);
+	   			finished.unifies(act.getTerm(0), theta);
 	   			break;
 	   		case "break":
 	   			System.out.print(agName + ": ");
@@ -512,82 +516,17 @@ public class CleaningWorld extends DefaultEnvironment implements MCAPLJobber
     	return theta;
     }
 	
-	private Boolean doAction(String action, String agName) 
+	private Boolean checkDone(String agName) 
 	{
-		//Check if agent has finished given task
-		if (workingOn.containsKey(agName) && workingOn.get(agName).equals(action))
+		//Check if agent has any actions on the stack
+		if (agentActions.get(agName).size() == 0)
 		{
-			//Agent has no actions left for the task
-			if (agentActions.get(agName).size() == 0)
-			{
-				workingOn.remove(agName); 
-				return true;
-			}
-			else
-			{
-				return false; //Still working on the same action
-			}
+			return true;
 		}
-		//Check if currently working on a different action, clear for new action
-		if (workingOn.containsKey(agName) && !workingOn.get(agName).equals(action))
+		else
 		{
-			agentActions.get(agName).clear();
-			workingOn.remove(agName);
+			return false;
 		}
-		//Set the agent to working on
-		workingOn.put(agName, action);
-		switch(action) //while debugging
-		{
-		case "clean1":
-			goToZone(agName, '1');
-			addCleaningActions(agName,'1');
-			break;
-		case "clean2":
-			goToZone(agName, '2');
-			addCleaningActions(agName,'2');
-			break;
-		case "clean3":
-			goToZone(agName, '3');
-			addCleaningActions(agName,'3');
-			break;
-		case "clean4":
-			goToZone(agName, '4');
-			addCleaningActions(agName,'4');
-			break;
-		case "clean5":
-			goToZone(agName, '5');
-			addCleaningActions(agName,'5');
-			break;
-		case "observe1":
-			goToZone(agName, '1');
-			observeDirt(agName);
-			break;
-		case "observe2":
-			goToZone(agName, '2');
-			observeDirt(agName);
-			break;
-		case "observe3":
-			goToZone(agName, '3');
-			observeDirt(agName);
-			break;
-		case "observe4":
-			goToZone(agName, '4');
-			observeDirt(agName);
-			break;
-		case "observe5":
-			goToZone(agName, '5');
-			observeDirt(agName);
-			break;
-		case "isSafe":
-			break;
-		case "allRoomsWillBeObserved":
-			break;
-		default:
-			System.out.println("Not implemented: " + action);
-			break;
-		}
-		//No action is instant
-		return false;
 	}
 
 	private void addCleaningActions(String agName, char zone) 

@@ -6,6 +6,7 @@ bin/*
 
 # Test Outputs #
 bin/TEST*
+output/*
 
 # Debugging Files #
 tmp/*
@@ -34,3 +35,6 @@ a.out
 /.metadata/
 /.settings/
 *.db
+# Mac DS Store #
+.DS_Store
+

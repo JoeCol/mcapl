@@ -1,20 +1,8 @@
-env = responsibility.CleaningWorld
+env = responsibility.TheoryImpl.CleaningWorld
 
 log.warning
 
-mas.agent.1.name = cleaner_agent
-mas.agent.1.file = /src/classes/responsibility/Cleaner.gwen
+mas.agent.1.name = cleaner1
+mas.agent.1.file = /src/classes/responsibility/TheoryImpl/cleaner.gwen
 mas.agent.1.builder = gwendolen.GwendolenAgentBuilder
-
-mas.agent.2.name = first_agent
-mas.agent.2.file = /src/classes/responsibility/Cleaner.gwen
-mas.agent.2.builder = gwendolen.GwendolenAgentBuilder
-
-mas.agent.3.name = second_agent
-mas.agent.3.file = /src/classes/responsibility/Cleaner.gwen
-mas.agent.3.builder = gwendolen.GwendolenAgentBuilder
-
-mas.agent.4.name = responsible_agent
-mas.agent.4.file = /src/classes/responsibility/responsible_cleaner.gwen
-mas.agent.4.builder = gwendolen.GwendolenAgentBuilder
 
