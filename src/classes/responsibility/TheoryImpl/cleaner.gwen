@@ -99,17 +99,42 @@ completedActions([])
 completedStates([])
 workedOnRes([])
 
-//Process Loop
+actionRes([])
+acceptedRes([])
+
+//Process Loops
 process(none,start)//where in process loop
+acceptedStage(none,start)
+actionStage(none,start)
 
 :Reasoning Rules:
 
+mostCared(Z,Z);
+mostCared([H|T], Z) :- 
+
+mostCared(X,Y,Z) :- care(X,X1), care(Y,Y1), X1<Y1, Z=Y;
+mostCared(X,Y,Z) :- care(X,X1), care(Y,Y1), Y1<X1, Z=Z;
 
 :Initial Goals:
 processLoop[achieve]
 
 
 :Plans: 
+//action loop
++!actionLoop[achieve] : {B actionStage(none,start), B actionRes(Res)} <- getFromList(Res,R), updateStage(action,R,doAction));
++!actionLoop[achieve] : {B actionStage(R,doAction)} <- prt("do action");
++!actionLoop[achieve] : {B actionStage(R,checkDone)} <- prt("check done");
++!actionLoop[achieve] : {B actionStage(R,failed)} <- prt("Res failed");
++!actionLoop[achieve] : {B actionStage(R,success)} <- prt("Res has successed");
+
+//accepted loop
++!acceptedLoop[achieve] : {B acceptedStage(none,start), B acceptedRes(Res)} <- getFromList(Res,R), updateStage(accepted,R,check);
++!acceptedLoop[achieve] : {B acceptedStage(R,check)} <- prt("Check if availiable");
++!acceptedLoop[achieve] : {B acceptedStage(R,free)} <- prt("free to add to action");
++!acceptedLoop[achieve] : {B acceptedStage(R,blocked)} <- prt("Blocked from action");
++!acceptedLoop[achieve] : {B acceptedStage(R,replace)} <- prt("Replace with higher priority res"); 
+
+
 //Specific Actions
 +!action(sendStatus)[perform] : {~B doingAction} <- +doingAction, prt("Send Report to Manager");
 +!action(cleanroomF)[perform] : {~B doingAction} <- +doingAction, goToZone("F"), clean("F");
@@ -220,7 +245,7 @@ processLoop[achieve]
 
 //Accepting or delegating responsibilities
 +!incomingRes(_, [])[perform] : {True} <- +.lock, prt("Processed all responsibilities"), -.lock;
-//Delegate responsiblity
+//Delegate responsibility
 +!incomingRes(Assignee, [Res|T])[perform] : {B capacity(Res), B delegate(Res,Ags)} <- +.lock, prt("Chose To Delegate ", Res), +!addAcceptedRes(Assignee, Res)[perform], +!incomingRes(Assignee, T)[perform], +!delegate(Res,Ags)[perform], -.lock;
 //Decide if to accept responsibility
 +!incomingRes(Assignee, [Res|T])[perform] : {B capacity(Res), B res(Res,Sub,_,_,_)} <- +.lock, prt("Chose To Accept ", Res), +!addAcceptedRes(Assignee, Res)[perform], +!incomingRes(Assignee, T)[perform], +!incomingRes(Assignee, Sub)[perform], -.lock;
