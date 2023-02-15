@@ -106,52 +106,14 @@ mostCared(X,Y,X) :- care(X,X1), care(Y,Y1), Y1<X1;
 mostCared(X,Y,Y) :- care(X,X1), care(Y,Y1);
 
 :Initial Goals:
-startup[perform]
+
 
 :Plans:
-+!startup[perform] : {True} <- +!acceptedLoop[achieve], +!actionLoop[achieve]; 
-
-//update stage loop
-+!updateStage(action,S)[perform] : {B actionStage(O)} <- -actionStage(O), +actionStage(S);
-+!updateStage(accepted,S)[perform] : {B acceptedStage(O)} <- -acceptedStage(O), +acceptedStage(S);
-
-//Check that res has been completed and succeeded/failed
-+!checkDone([])[perform] : {True} <- prt("Checked all res");
-+!checkDone([H|T])[perform] : {B tasks(L), B res(H,_,Task,_,_), B task(Task,[Actions],[States])} <- allDone(L, [Actions|States], Out), +!checkIndividual(H,Out)[perform], +!checkDone(T)[perform];
-+!checkIndividual(H,true)[perform] : {B res(H,_,Task,_,oneshot), B task(Task,[Actions],[States])} <- +!remList(acc,H)[perform], +!remList(don,[Actions|States])[perform];
-+!checkIndividual(H,true)[perform] : {B res(H,_,Task,_,repeat), B task(Task,[Actions],[States])} <- +!remList(acc,H)[perform], +!addList(acc,H)[perform], +!remList(don,[Actions|States])[perform];
-+!checkIndividual(H,false)[perform] : {True} <- prt("Not done yet");
-
-//action loop
-+!actionLoop[achieve] : {B actionStage(start), B action(L)} <- +!updateStage(action,L)[perform];
-+!actionLoop[achieve] : {B actionStage(isdone), B action(L)} <- +!checkDone(L)[perform], +!updateStage(action,start)[perform];
-+!actionLoop[achieve] : {B actionStage([])} <- prt("No res left check fulfilment "), +!updateStage(action,isdone)[perform];
-+!actionLoop[achieve] : {B actionStage([H|T]), B res(H,_,Task,_,_), B task(Task,[Actions],[States])} <- prt("Doing res ", H), +!actions(H,[Actions|States])[perform], +!updateStage(action,T)[perform];
-
-//accepted loop
-+!acceptedLoop[achieve] : {B acceptedStage(newres), B responsibilities([])} <- print("No new responsibilities"), +!updateStage(accepted,start)[perform];
-+!acceptedLoop[achieve] : {B acceptedStage(newres), B responsibilities([Res|T])} <- print("New responsibility ", Res), +!addList(acc,Res)[perform], +!remList(res,Res)[perform], +!updateStage(accepted,start)[perform];
-+!acceptedLoop[achieve] : {B acceptedStage(start), B accepted([])} <- prt("No accepted res"), +!updateStage(accepted,newres)[perform];
-+!acceptedLoop[achieve] : {B acceptedStage(start), B accepted([H|T])} <- prt("Get Most Cared"), +!updateStage(accepted,[H|T])[perform];
-+!acceptedLoop[achieve] : {B acceptedStage([])} <- prt("No res to process "), +!updateStage(accepted,newres)[perform];
-+!acceptedLoop[achieve] : {B acceptedStage([H|T])} <- prt("Trying to add ", H, " to action list"), +!addToActionList(H)[perform], +!updateStage(accepted, T)[perform];
-
-//Add to action list
-+!addToActionList(Res)[perform] : {B action(L)} <- isBlocked(Res,L,Blocked,By), +!isBlocked(Blocked,Res,By)[perform];
-+!isBlocked(false,Res,_)[perform] : {True} <- +!addList(act,Res)[perform], +!remList(acc,Res)[perform]; 
-+!isBlocked(true,Res,By)[perform] : {B mostCared(Res,By,Res)} <- +!remList(act,By)[perform], +!addList(act,By)[perform], +!updateStage(action,start)[perform];//Replace
-+!isBlocked(true,Res,By)[perform] : {B mostCared(Res,By,By)} <- prt("Can not add ", Res);//Do not replace
-
++!doTasks[achieve] : {~B actionReady} <- *actionReady;
++!doTasks[achieve] : {B actionReady} <- getPossibleTasks(Out), getViableTasks(Out), selectMostCared(Out), do(Out);
 //Manage lists
 +!addList(res,Res)[perform] : {B responsibilities(L)} <- +.lock, -responsibilities(L), addResItem(res,L,Out), +responsibilities(Out), -.lock;
-+!addList(acc,Res)[perform] : {B accepted(L)} <- +.lock, -accepted(L), addResItem(res,L,Out), +accepted(Out), -.lock;
-+!addList(act,Res)[perform] : {B action(L)} <- +.lock, -action(L), addResItem(res,L,Out), +action(Out), -.lock;
-+!addList(don,Res)[perform] : {B task(L)} <- +.lock, -task(L), addItem(res,L,Out), +task(Out), -.lock;
-
 +!remList(res,Res)[perform] : {B responsibilities(L)} <- +.lock, -responsibilities(L), deleteItem(Res,L,Out), +responsibilities(Out), -.lock;
-+!remList(acc,Res)[perform] : {B accepted(L)} <- +.lock, -accepted(L), deleteItem(res,L,Out), +accepted(Out), -.lock;
-+!remList(act,Res)[perform] : {B action(L)} <- +.lock, -action(L), deleteItem(res,L,Out), +action(Out), -.lock;
-+!remList(don,Res)[perform] : {B task(L)} <- +.lock, -task(L), addItem(res,L,Out), +task(Out), -.lock;
 
 //Add new responsibility
 +!incomingRes(Assignee,[Res])[perform] : {B capacity(Res)} <- +!addList(res,Res)[perform], +!reportOutcome(yes,Assignee,Res)[perform];
