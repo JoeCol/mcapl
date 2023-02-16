@@ -43,28 +43,28 @@ res(cleanBadDirtI, [], cleanroomI, [], oneshot)
 res(cleanBadDirtJ, [], cleanroomJ, [], oneshot)
 
 //care values
-care(cleanroomA,1)
+care(cleanA,1)
 care(cleanBadDirtA,10)
-care(cleanroomB,1)
+care(cleanB,1)
 care(cleanBadDirtB,10)
-care(cleanroomC,1)
+care(cleanC,1)
 care(cleanBadDirtC,10)
-care(cleanroomD,1)
+care(cleanD,1)
 care(cleanBadDirtD,10)
-care(cleanroomE,1)
+care(cleanE,1)
 care(cleanBadDirtE,10)
-care(cleanroomF,1)
+care(cleanF,1)
 care(cleanBadDirtF,10)
-care(cleanroomG,1)
+care(cleanG,1)
 care(cleanBadDirtG,10)
-care(cleanroomH,1)
+care(cleanH,1)
 care(cleanBadDirtH,10)
-care(cleanroomI,1)
+care(cleanI,1)
 care(cleanBadDirtI,10)
-care(cleanroomJ,1)
+care(cleanJ,1)
 care(cleanBadDirtJ,10)
 
-care(report,100)
+care(report,0)
 
 //Capacity - In essence pre-computed
 capacity(cleanA)
@@ -93,30 +93,61 @@ capacity(report)
 
 //Current Responsibilities
 responsibilities([])
-action([])
-accepted([])
-task([]) //completed tasks
+finished([]) //completed tasks
+failed([])
 
 //Process Loops
 acceptedStage(newres)
 actionStage(start)
 
 :Reasoning Rules:
-mostCared(X,Y,X) :- care(X,X1), care(Y,Y1), Y1<X1;
-mostCared(X,Y,Y) :- care(X,X1), care(Y,Y1);
+allTasks([],[]);
+allTasks([H|T], [Tasks|OtherTasks]) :- res(H, _, Name, _, _), task(Name,[Tasks],_), allTasks(T,OtherTasks);
 
+resIn(Res,[],false);
+resIn(H,[H],true);
+resIn(H,[H|T],true);
+resIn(H,[H1|T],Out) :- resInFin(H,T,Out);
 :Initial Goals:
-
+preRes[achieve]
+//test(1)[perform]
 
 :Plans:
-+!doTasks[achieve] : {~B actionReady} <- *actionReady;
-+!doTasks[achieve] : {B actionReady} <- getPossibleTasks(Out), getViableTasks(Out), selectMostCared(Out), do(Out);
+//Test getting tasks
+//+!test[perform] : {B allTasks([report,cleanA,cleanB,cleanBadDirtC,cleanBadDirtA],Out)} <- prt(Out);
+
+//+!test(1)[perform] : {B resInFin(cleanA,[report,cleanA],true)} <- prt("Works for last item"), +!test(2)[perform];
+//+!test(2)[perform] : {B resInFin(cleanB,[report,cleanA],false)} <- prt("Works for false"), +!test(3)[perform];
+//+!test(3)[perform] : {B resInFin(cleanB,[report,cleanA],A)} <- prt("Result ", A), +!test(4)[perform];
+//+!test(4)[perform] : {B resInFin(cleanA,[report,cleanA],A)} <- prt("Result ", A);
+
+//Check that responsibilities are done
++!checkFinishedResponsibilities([])[perform] : {True} <- prt("All finished checked");
++!checkFinishedResponsibilites([Res|T])[perform] : {B finished(Fin), B resInFin(Res,Fin,true), B res(Res,_,_,_,oneshot)} <- prt("Res Done"), +!remList(Res)[perform], +!checkFinishedResponsibilites(T)[perform]; 
++!checkFinishedResponsibilites([Res|T])[perform] : {B finished(Fin), B resInFin(Res,Fin,true), B res(Res,_,_,_,repeat)} <- prt("Res Done"), +!remList(Res)[perform], resentRes(Res), +!checkFinishedResponsibilites(T)[perform]; 
++!checkFinishedResponsibilites([Res|T])[perform] : {B failed(Fin), B resInFin(Res,Fin,true)} <- prt("Res failed"), +!remList(Res)[perform], +!checkFinishedResponsibilites(T)[perform]; 
++!checkFinishedResponsibilites([Res|T])[perform] : {True} <- prt("Res not done"), +!checkFinishedResponsibilites(T)[perform]; 
+
+
++!do([H|T])[perform] : {B actionReady} <- +!action(H)[perform], +!do([T])[perform];
++!do([H|T])[perform] : {~B actionReady} <- prt("Interrupted");
+
+//Do responsibility
++!doRes([])[perform] : {True} <- prt("done all res"), +.lock, +!checkFinishedResponsibilities(Res)[perform], -.lock;
++!doRes([H|T])[perform] : {B actionReady, B res(H,_,TName,_,_), B task(TName,[Task],[State])} <- +!do([Task|State])[perform];
++!doRes([H|T])[perform] : {~B actionReady} <- prt("Interrupted");
+
+//Prepare task list
++!preRes[achieve] : {~B actionReady} <- *actionReady;
++!preRes[achieve] : {B actionReady, B responsibilities([])} <- -actionReady;
++!preRes[achieve] : {B actionReady, B responsibilities(Res)} <- getCombos(Res,Combo), getViable(Combo,Viable), selectCared(Viable,Out), +!doRes(Out)[perform];
+
 //Manage lists
-+!addList(res,Res)[perform] : {B responsibilities(L)} <- +.lock, -responsibilities(L), addResItem(res,L,Out), +responsibilities(Out), -.lock;
-+!remList(res,Res)[perform] : {B responsibilities(L)} <- +.lock, -responsibilities(L), deleteItem(Res,L,Out), +responsibilities(Out), -.lock;
++!addRes(Res)[perform] : {B responsibilities(L)} <- +.lock, -responsibilities(L), addResItem(Res,L,Out), +responsibilities(Out), -.lock;
++!remRes(Res)[perform] : {B responsibilities(L)} <- +.lock, -responsibilities(L), deleteItem(Res,L,Out), +responsibilities(Out), -.lock;
 
 //Add new responsibility
-+!incomingRes(Assignee,[Res])[perform] : {B capacity(Res)} <- +!addList(res,Res)[perform], +!reportOutcome(yes,Assignee,Res)[perform];
++!incomingRes(Assignee,[Res])[perform] : {B capacity(Res)} <- -actionReady, +.lock, +!addRes(Res)[perform], +!reportOutcome(yes,Assignee,Res)[perform], -.lock, +actionReady;
 +!incomingRes(Assignee,[Res])[perform] : {~B capacity(Res)} <- +!reportOutcome(no,Assignee,Res)[perform];
 
 //Messages to send back
@@ -134,12 +165,8 @@ mostCared(X,Y,Y) :- care(X,X1), care(Y,Y1);
 +.received(:tell, X) : {True} <- print(X), printstate, break;
 
 //Specific Actions & states
-+!actions(Res,[])[perform] : {True} <- prt("All actions done");
-+!actions(Res,[H|T])[perform] : {True} <- prt("Doing action ", H), +!action(H)[perform], +actions(Res,[T]);
-
-+!action(sendStatus)[perform] : {~B busy} <- prt("Send Report to Manager"), .send(manager, :tell, status(notbusy)), addToFinishedTasks(sendStatus);
-+!action(sendStatus)[perform] : {B busy} <- prt("Send Report to Manager"), .send(manager, :tell, status(busy)), addToFinishedTasks(sendStatus);
-+!action(cleanroomF)[perform] : {~B busy} <- +busy, goToZone("F"), clean("F"), addToFinishedTasks(cleanRoomF);
-+!action(AnyAction)[perform] : {B busy} <- prt("currently working");
-+!action(AnyAction)[perform] : {True} <- prt("Action ", anyAction, " not recognised");
++!action(Res,sendStatus)[perform] : {True} <- prt("Send Report to Manager"), sendReport(Manager), addToFinished(Res);
++!action(Res,cleanroomF)[perform] : {True} <- clearActions, goToZone("F"), clean("F"), addToFinished(Res);
++!action(Res,AnyAction)[perform] : {B busy} <- prt("currently working on ");
++!action(Res,AnyAction)[perform] : {True} <- prt("Action ", anyAction, " not recognised for Res ", Res);
 

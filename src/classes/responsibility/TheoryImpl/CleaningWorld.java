@@ -14,6 +14,7 @@ import java.util.Collections;
 import java.util.Deque;
 import java.util.HashMap;
 import java.util.Iterator;
+import java.util.List;
 import java.util.ArrayDeque;
 import java.util.Random;
 import java.util.Stack;
@@ -72,6 +73,7 @@ public class CleaningWorld extends DefaultEnvironment implements MCAPLJobber
 	
 	HashMap<String, ArrayDeque<AgentAction>> agentActions = new HashMap<String, ArrayDeque<AgentAction>>();
 	HashMap<String, String> workingOn = new HashMap<String, String>();
+	HashMap<String, HashMap<String, Integer>> agentCares = new HashMap<String, HashMap<String,Integer>>();
 	
 	ConcurrentLinkedQueue<Pair<String, Predicate>> perceptAdds = new ConcurrentLinkedQueue<Pair<String, Predicate>>();
 	ConcurrentLinkedQueue<Pair<String, Predicate>> perceptRems = new ConcurrentLinkedQueue<Pair<String, Predicate>>();
@@ -131,6 +133,18 @@ public class CleaningWorld extends DefaultEnvironment implements MCAPLJobber
 			
 			agentColours.put(a.getAgName(), new Color(r.nextInt(0xFFFFFF)));
 			agentActions.put(a.getAgName(), new ArrayDeque<AgentAction>());
+			
+			//Add agent care function to map for easy reference
+   			ArrayList<Literal> beliefs = a.getBB().getAll();
+   			HashMap<String, Integer> care = new HashMap<String,Integer>();
+			for (int j = 0; j < beliefs.size(); j++)
+			{
+				if (beliefs.get(j).getFunctor().equals("care"))
+				{
+					care.put(beliefs.get(j).getTerm(0).toString(), Integer.parseInt(beliefs.get(j).getTerm(1).toString()));
+				}
+			}
+			agentCares.put(a.getAgName(), care);
 		}
 		
 		//For Testing
@@ -145,6 +159,11 @@ public class CleaningWorld extends DefaultEnvironment implements MCAPLJobber
 		msgClean.addTerm(lt);
 		msgClean.addTerm(new Predicate("cleanF"));
 		addMessage("cleaner1", new Message(1, "initial", "cleaner1", msgClean));
+		
+		Predicate msgCleanA = new Predicate("assignment");
+		msgCleanA.addTerm(lt);
+		msgCleanA.addTerm(new Predicate("cleanA"));
+		addMessage("cleaner1", new Message(1, "initial", "cleaner1", msgCleanA));
 		
 		environmentTimer.scheduleAtFixedRate(new TimerTask()
 		{
@@ -323,6 +342,7 @@ public class CleaningWorld extends DefaultEnvironment implements MCAPLJobber
 	   	Unifier theta = super.executeAction(agName, act);
 	   	//System.out.println(agName + ": executes:" + act.fullstring());
   		//Should only place actions onto agentaction stack
+	   	ListTerm fullRes;
 	   	switch (act.getFunctor())
 	   	{
 	   		case "remfin":
@@ -408,40 +428,42 @@ public class CleaningWorld extends DefaultEnvironment implements MCAPLJobber
 	   		case "goToZone":
 	   			goToZone(agName, ((StringTerm)act.getTerm(0)).getString().charAt(0));
 	   			break;
-	   		case "getCared":
-	   			ListTerm res = (ListTerm)act.getTerm(0);
-	   			ListTerm completedRes = (ListTerm)act.getTerm(2);
-	   			Predicate caredMostRes = new Predicate();
-	   			int caredMostResV = 0;
-	   			AILAgent agent = getAgents().get(0);
-	   			for (int i = 0; i < getAgents().size(); i++)
+	   		case "addResItem":
+	   			Predicate res = (Predicate)act.getTerm(0);
+	   			ListTerm resList = (ListTerm)act.getTerm(1);
+	   			int careOfRes = agentCares.get(agName).get(res.toString());
+	   			if (resList.size() != 0)
 	   			{
-	   				agent = getAgents().get(i);
-	   				if (agent.getAgName().equals(agName))
-	   				{
-	   					break;
-	   				}
+		   			for (int i = 0; i < resList.size(); i++)
+		   			{
+		   				if (careOfRes > agentCares.get(agName).get(resList.get(i).toString()))
+		   				{
+		   					resList.add(i, res);
+		   					break;
+		   				}
+		   			}
+		   			resList.add(resList.size(),res);
 	   			}
-	   			ArrayList<Literal> beliefs = agent.getBB().getAll();
-	   			int resValue = 0;
-	   			for (int i = 0; i < res.size(); i++)
+	   			else
 	   			{
-	   				Term cRes = res.get(i);
-	   				for (int j = 0; j < beliefs.size(); j++)
-	   				{
-	   					if (beliefs.get(j).fullstring().contains("care(" + cRes.toString()))
-	   					{
-	   						resValue = Integer.parseInt(beliefs.get(j).getTerm(1).toString());
-	   						break;
-	   					}
-	   				}
-	   				if (resValue > caredMostResV && !completedRes.contains(cRes))
-	   				{
-	   					caredMostRes.setFunctor(cRes.toString());
-	   					caredMostResV = resValue;
-	   				}
+	   				resList.add(res);
 	   			}
-	   			caredMostRes.unifies(act.getTerm(1), theta);
+	   			resList.unifies(act.getTerm(2), theta);
+	   			break;
+	   		case "getCombos":
+	   			fullRes = (ListTerm)act.getTerm(0);
+	   			ListTerm combos = getCombos(fullRes);
+	   			combos.unifies(act.getTerm(1), theta);
+	   			break;
+	   		case "getViable":
+	   			fullRes = (ListTerm)act.getTerm(0);
+	   			ListTerm viable = getViable(fullRes);
+	   			viable.unifies(act.getTerm(1), theta);
+	   			break;
+	   		case "selectCared":
+	   			fullRes = (ListTerm)act.getTerm(0);
+	   			ListTerm mostCared = getMostCared(fullRes);
+	   			mostCared.unifies(act.getTerm(1), theta);
 	   			break;
 	   		case "getNextInList":
 	   			ListTerm todo = (ListTerm)act.getTerm(0);
@@ -516,6 +538,27 @@ public class CleaningWorld extends DefaultEnvironment implements MCAPLJobber
     	return theta;
     }
 	
+	private ListTerm getMostCared(ListTerm fullRes) {
+		// TODO Auto-generated method stub
+		return null;
+	}
+
+	private ListTerm getViable(ListTerm fullRes) {
+		// TODO Auto-generated method stub
+		return null;
+	}
+
+	private ListTerm getCombos(ListTerm fullRes) {
+		List<Term> res = fullRes.getAsList();
+		//Get all combinations
+		ListTerm
+		for (i = 0; i < res.size(); i++)
+		{
+			
+		}
+		return null;
+	}
+
 	private Boolean checkDone(String agName) 
 	{
 		//Check if agent has any actions on the stack
