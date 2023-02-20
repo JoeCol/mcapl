@@ -20,6 +20,7 @@ import java.util.Random;
 import java.util.Stack;
 import java.util.Timer;
 import java.util.TimerTask;
+import java.util.TreeSet;
 import java.util.concurrent.ConcurrentLinkedQueue;
 
 import ail.mas.DefaultEnvironment;
@@ -226,6 +227,11 @@ public class CleaningWorld extends DefaultEnvironment implements MCAPLJobber
 							
 						}
 						currentState = Process.p_nochanges;
+						//If last time inform agent
+						if (actionStack.isEmpty())
+						{
+							agentDoneAllActions(a.getAgName());
+						}
 					}
 				}
 				//Do dirt step
@@ -462,7 +468,7 @@ public class CleaningWorld extends DefaultEnvironment implements MCAPLJobber
 	   			break;
 	   		case "selectCared":
 	   			fullRes = (ListTerm)act.getTerm(0);
-	   			ListTerm mostCared = getMostCared(fullRes);
+	   			ListTerm mostCared = getMostCared(fullRes, agName);
 	   			mostCared.unifies(act.getTerm(1), theta);
 	   			break;
 	   		case "getNextInList":
@@ -519,17 +525,35 @@ public class CleaningWorld extends DefaultEnvironment implements MCAPLJobber
 	   			Predicate finished = new Predicate(actionFinished.toString());
 	   			finished.unifies(act.getTerm(0), theta);
 	   			break;
+	   		case "clearActions":
+	   			agentActions.get(agName).clear();
+	   			break;
+	   		case "doing":
+	   			workingOn.put(agName, act.getTerm(0).toString());
+	   			break;
+	   		case "getBusy":
+	   			Predicate isBusy;
+	   			if (agentActions.get(agName).isEmpty())
+	   			{
+	   				isBusy = new Predicate("true");
+	   			}
+	   			else
+	   			{
+	   				isBusy = new Predicate("false");
+	   			}
+	   			isBusy.unifies(act.getTerm(0), theta);
+	   			break;
+	   		case "getName":
+	   			Predicate uName = new Predicate(agName);
+	   			uName.unifies(act.getTerm(0), theta);
+	   			break;
 	   		case "break":
 	   			System.out.print(agName + ": ");
 	   			System.out.println("Breakpoint");
 	   			System.out.println(agentActions.toString());
 	   			break;
-	   		case "randomMove":
 	   		case "printstate":
-	   		case "print":
 	   		case "send":
-	   		case "sum":
-	   			//System.out.println();
 	   			break;
 	   		default:
 	   			System.out.println(act.getFunctor() + " has not been implemented");
@@ -538,25 +562,109 @@ public class CleaningWorld extends DefaultEnvironment implements MCAPLJobber
     	return theta;
     }
 	
-	private ListTerm getMostCared(ListTerm fullRes) {
-		// TODO Auto-generated method stub
-		return null;
+	private void agentDoneAllActions(String agName)
+	{
+		Predicate msgPred = new Predicate("finished");
+		msgPred.addTerm(new Predicate(workingOn.get(agName)));
+		workingOn.remove(agName);
+		addMessage(agName, new Message(1, "env", agName, msgPred));
+	}
+	
+	private ListTerm getMostCared(ListTerm fullRes, String agName) {
+		TreeSet<CaredItem> caredList = new TreeSet<CaredItem>();
+		for (int i = 0; i < fullRes.size(); i++)
+		{
+			ListTerm lst = (ListTerm)fullRes.get(i);
+			CaredItem item = new CaredItem();
+			item.index = i;
+			item.size = lst.size();
+			int max = 0;
+			for (int j = 0; j < lst.size(); j++)
+			{
+				max = agentCares.get(agName).get(lst.get(j).toString()) > max ? agentCares.get(agName).get(lst.get(j).toString()) : max;
+			}
+			item.highestValue = max;
+			caredList.add(item);
+		}
+		return (ListTerm)fullRes.get(caredList.last().index);
 	}
 
 	private ListTerm getViable(ListTerm fullRes) {
-		// TODO Auto-generated method stub
-		return null;
+		ListTerm viableLst = new ListTermImpl();
+		boolean viable;
+		for (int i = 0; i < fullRes.size(); i++)
+		{
+			viable = true;
+			String items = fullRes.get(i).toString();
+			//Splits make two items if only one item is found
+			if (items.split("clean").length > 2 || items.split("observe").length > 2 || (items.contains("clean") && items.contains("observe")))
+			{
+				viable = false;
+			}
+			if (viable)
+			{
+				viableLst.add(fullRes.get(i));
+			}
+		}
+		return viableLst;
 	}
-
+	
+	private List<Term> getSubset(List<Term> input, int[] index) {
+		List<Term> result = new ArrayList<Term>(); 
+	    for (int i = 0; i < index.length; i++)
+	    {
+	        result.add(input.get(index[i]));
+		}
+	    return result;
+	}
+	
 	private ListTerm getCombos(ListTerm fullRes) {
 		List<Term> res = fullRes.getAsList();
+		ArrayList<List<Term>> subsets = new ArrayList<>();
 		//Get all combinations
-		ListTerm
-		for (i = 0; i < res.size(); i++)
+		for (int size = 1; size <= res.size(); size++)
 		{
-			
+			int[] s = new int[size];                  // here we'll keep indices pointing to elements in input array
+
+			if (size <= res.size()) 
+			{
+				// first index sequence: 0, 1, 2, ...
+				for (int j = 0; j < size; j++)
+				{
+					s[j] = j;
+				}
+				subsets.add(getSubset(res,s));
+				boolean itemFound = true;
+				while (itemFound)
+				{
+					int start;
+					for (start = size - 1; start >= 0 && s[start] == res.size() - size + start; start--); //Decrement until item found
+					if (start >= 0)
+					{
+						s[start]++;                    // increment this item
+						for (++start; start < size; start++) {    // fill up remaining items
+							s[start] = s[start - 1] + 1; 
+						}
+						subsets.add(getSubset(res, s));
+					}
+					else
+					{
+						itemFound = false;
+					}
+				}
+			}
 		}
-		return null;
+		ListTerm lt = new ListTermImpl();
+		for (int i = 0; i < subsets.size(); i++)
+		{
+			ListTerm sl = new ListTermImpl();
+			for (int j = 0; j < subsets.get(i).size(); j++)
+			{
+				sl.add(subsets.get(i).get(j));
+			}
+			lt.add(sl);
+		}
+		return lt;
 	}
 
 	private Boolean checkDone(String agName) 
