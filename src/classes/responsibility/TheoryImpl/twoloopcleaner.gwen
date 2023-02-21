@@ -165,7 +165,7 @@ preRes[achieve]
 +.received(:tell, accepted(Res,Assignee)) : {True} <- prt("Received ", accepted(Res,Assignee)), -waiting(Res,Assignee), +delegated(Res,Assignee);
 +.received(:tell, finished(Res)) : {True} <- +.lock, +!finishRes(Res)[perform], -.lock, +actionReady;
 +.received(:tell, failed(Res)) : {True} <- +.lock, +!failedRes(Res)[perform], -.lock, +actionReady;
-+.received(:tell, X) : {True} <- print(X), printstate, break;
++.received(:tell, X) : {True} <- prt(X), printstate, break;
 
 //Specific Actions & states
 +!sendReport(true)[perform] : {~B busy} <- +busy, getName(Name), .send(manager,:tell, busy(B,Name)), .send(Name,:tell,finished(Res));
@@ -175,6 +175,14 @@ preRes[achieve]
 
 +!action(Res,sendStatus)[perform] : {True} <- prt("Send Report to Manager"), getBusy(B), +!sendReport(B)[perform];
 +!action(Res,cleanroomA)[perform] : {True} <- clearActions, doing(Res), goToZone("A"), clean("A");
++!action(Res,cleanroomB)[perform] : {True} <- clearActions, doing(Res), goToZone("B"), clean("B");
++!action(Res,cleanroomC)[perform] : {True} <- clearActions, doing(Res), goToZone("C"), clean("C");
++!action(Res,cleanroomD)[perform] : {True} <- clearActions, doing(Res), goToZone("D"), clean("D");
++!action(Res,cleanroomE)[perform] : {True} <- clearActions, doing(Res), goToZone("E"), clean("E");
 +!action(Res,cleanroomF)[perform] : {True} <- clearActions, doing(Res), goToZone("F"), clean("F");
++!action(Res,cleanroomG)[perform] : {True} <- clearActions, doing(Res), goToZone("G"), clean("G");
++!action(Res,cleanroomH)[perform] : {True} <- clearActions, doing(Res), goToZone("H"), clean("H");
++!action(Res,cleanroomI)[perform] : {True} <- clearActions, doing(Res), goToZone("I"), clean("I");
++!action(Res,cleanroomJ)[perform] : {True} <- clearActions, doing(Res), goToZone("J"), clean("J");
 +!action(Res,AnyAction)[perform] : {True} <- prt("Action ", AnyAction, " not recognised for Res ", Res);
 

@@ -21,6 +21,7 @@ import java.util.Stack;
 import java.util.Timer;
 import java.util.TimerTask;
 import java.util.TreeSet;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentLinkedQueue;
 
 import ail.mas.DefaultEnvironment;
@@ -73,11 +74,12 @@ public class CleaningWorld extends DefaultEnvironment implements MCAPLJobber
 	HashMap<Character, ArrayList<Pair<Integer, Integer>>> zoneSquares = new HashMap<Character, ArrayList<Pair<Integer, Integer>>>();
 	
 	HashMap<String, ArrayDeque<AgentAction>> agentActions = new HashMap<String, ArrayDeque<AgentAction>>();
-	HashMap<String, String> workingOn = new HashMap<String, String>();
+	ConcurrentHashMap<String, String> workingOn = new ConcurrentHashMap<String, String>();
 	HashMap<String, HashMap<String, Integer>> agentCares = new HashMap<String, HashMap<String,Integer>>();
 	
 	ConcurrentLinkedQueue<Pair<String, Predicate>> perceptAdds = new ConcurrentLinkedQueue<Pair<String, Predicate>>();
 	ConcurrentLinkedQueue<Pair<String, Predicate>> perceptRems = new ConcurrentLinkedQueue<Pair<String, Predicate>>();
+	ConcurrentLinkedQueue<Pair<String, Message>> perceptFin = new ConcurrentLinkedQueue<Pair<String,Message>>();
 	
 	Random r = new Random();
 	
@@ -153,18 +155,8 @@ public class CleaningWorld extends DefaultEnvironment implements MCAPLJobber
 		ListTermImpl lt = new ListTermImpl();
 		lt.add(new Predicate("initial"));
 		msgPred.addTerm(lt);
-		msgPred.addTerm(new Predicate("report"));
-		addMessage("cleaner1", new Message(1, "initial", "cleaner1", msgPred));
-		
-		Predicate msgClean = new Predicate("assignment");
-		msgClean.addTerm(lt);
-		msgClean.addTerm(new Predicate("cleanF"));
-		addMessage("cleaner1", new Message(1, "initial", "cleaner1", msgClean));
-		
-		Predicate msgCleanA = new Predicate("assignment");
-		msgCleanA.addTerm(lt);
-		msgCleanA.addTerm(new Predicate("cleanA"));
-		addMessage("cleaner1", new Message(1, "initial", "cleaner1", msgCleanA));
+		msgPred.addTerm(new Predicate("janitorial"));
+		addMessage("manager", new Message(1, "initial", "manager", msgPred));
 		
 		environmentTimer.scheduleAtFixedRate(new TimerTask()
 		{
@@ -218,6 +210,15 @@ public class CleaningWorld extends DefaultEnvironment implements MCAPLJobber
 								break;
 							}
 						}
+						//If last time inform agent
+						if (actionStack.isEmpty())
+						{
+							Predicate msgPred = new Predicate("finished");
+							msgPred.addTerm(new Predicate(workingOn.get(a.getAgName())));
+							workingOn.remove(a.getAgName());
+					 		perceptFin.add(new Pair<String,Message>(a.getAgName(),new Message(1,"env",a.getAgName(),msgPred)));
+						}
+
 						//Update agent beliefs
 						//Get actions from environment thread
 						currentState = Process.p_updatePercept;
@@ -227,11 +228,6 @@ public class CleaningWorld extends DefaultEnvironment implements MCAPLJobber
 							
 						}
 						currentState = Process.p_nochanges;
-						//If last time inform agent
-						if (actionStack.isEmpty())
-						{
-							agentDoneAllActions(a.getAgName());
-						}
 					}
 				}
 				//Do dirt step
@@ -562,14 +558,6 @@ public class CleaningWorld extends DefaultEnvironment implements MCAPLJobber
     	return theta;
     }
 	
-	private void agentDoneAllActions(String agName)
-	{
-		Predicate msgPred = new Predicate("finished");
-		msgPred.addTerm(new Predicate(workingOn.get(agName)));
-		workingOn.remove(agName);
-		addMessage(agName, new Message(1, "env", agName, msgPred));
-	}
-	
 	private ListTerm getMostCared(ListTerm fullRes, String agName) {
 		TreeSet<CaredItem> caredList = new TreeSet<CaredItem>();
 		for (int i = 0; i < fullRes.size(); i++)
@@ -862,6 +850,12 @@ public class CleaningWorld extends DefaultEnvironment implements MCAPLJobber
 				//System.out.println("Adding percept " + p._2.toString() + " to agent " + p._1);
 				addPercept(p._1, p._2);
 			}
+			while (!perceptFin.isEmpty())
+			{
+				Pair<String, Message> p = perceptFin.poll();
+				addMessage(p._1, p._2);
+			}
+			
 			this.notifyListeners();
 			currentState = Process.p_updatedPercept;
 		}

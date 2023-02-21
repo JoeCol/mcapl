@@ -2,7 +2,7 @@ env = responsibility.TheoryImpl.CleaningWorld
 
 log.warning
 
-mas.agent.1.name = cleaner1
-mas.agent.1.file = /src/classes/responsibility/TheoryImpl/twoloopcleaner.gwen
+mas.agent.1.name = manager
+mas.agent.1.file = /src/classes/responsibility/TheoryImpl/manager.gwen
 mas.agent.1.builder = gwendolen.GwendolenAgentBuilder
 
