@@ -50,13 +50,13 @@ public class ResponsibilityGUI {
 			public void run() {
 				try 
 				{
-					String ailFile = "src/classes/responsibility/TheoryImpl/test.ail";
+					String ailFile = "/src/classes/responsibility/TheoryImpl/test.ail";
 					int delay = 300;
 					String saveLoc = "output/";
 					int simSteps = 10000;
 					int dirtInt = 15; 
 					int badDirtInt = 5;
-					String worldLoc = "src/classes/responsibility/TheoryImpl/10Rooms.world";
+					String worldLoc = "/src/classes/responsibility/TheoryImpl/10Rooms.world";
 					boolean autoStart = false;
 					for (int i = 0; i < args.length; i++)
 					{

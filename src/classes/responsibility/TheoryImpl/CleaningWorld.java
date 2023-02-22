@@ -347,6 +347,9 @@ public class CleaningWorld extends DefaultEnvironment implements MCAPLJobber
 	   	ListTerm fullRes;
 	   	switch (act.getFunctor())
 	   	{
+	   		case "updateCare":
+				agentCares.get(agName).put(act.getTerm(0).toString(), (int)((NumberTerm)act.getTerm(1)).solve());
+	   			break;
 	   		case "remfin":
 	   			removePercept(agName, new Predicate("finished"));
 	   			this.notifyListeners();
@@ -405,9 +408,6 @@ public class CleaningWorld extends DefaultEnvironment implements MCAPLJobber
 	   			diList.remove(diItem);
 	   			diList.unifies(act.getTerm(2), theta);
 	   			break;
-	   		case "removeObserved":
-	   			removePercept(agName, new Predicate("observed"));
-	   			break;
 	   		case "delete":
 	   			ListTerm firstList1 = (ListTerm)act.getTerm(0);
 	   			ListTerm secondList1 = (ListTerm)act.getTerm(1);
@@ -421,7 +421,7 @@ public class CleaningWorld extends DefaultEnvironment implements MCAPLJobber
 	   			}
 	   			secondList1.unifies(act.getTerm(2), theta);
 	   			break;
-	   		case "observeDirt":
+	   		case "observe":
 	   			agentActions.get(agName).add(AgentAction.aa_observedirt);
 	   			break;
 	   		case "clean":
@@ -436,15 +436,16 @@ public class CleaningWorld extends DefaultEnvironment implements MCAPLJobber
 	   			int careOfRes = agentCares.get(agName).get(res.toString());
 	   			if (resList.size() != 0)
 	   			{
+	   				int posToAdd = resList.size();
 		   			for (int i = 0; i < resList.size(); i++)
 		   			{
 		   				if (careOfRes > agentCares.get(agName).get(resList.get(i).toString()))
 		   				{
-		   					resList.add(i, res);
+		   					posToAdd = i;
 		   					break;
 		   				}
 		   			}
-		   			resList.add(resList.size(),res);
+		   			resList.add(posToAdd,res);
 	   			}
 	   			else
 	   			{
@@ -559,10 +560,36 @@ public class CleaningWorld extends DefaultEnvironment implements MCAPLJobber
     }
 	
 	private ListTerm getMostCared(ListTerm fullRes, String agName) {
-		TreeSet<CaredItem> caredList = new TreeSet<CaredItem>();
+		ListTerm fullResUnique = new ListTermImpl();
 		for (int i = 0; i < fullRes.size(); i++)
 		{
+			ListTerm resUnique = new ListTermImpl();
 			ListTerm lst = (ListTerm)fullRes.get(i);
+			for (int j = 0; j < lst.size(); j++)
+			{
+				boolean unique = false;
+				for (int k = 0; k < fullRes.size(); k++)
+				{
+					if (i != k)
+					{
+						if (!((ListTerm)fullRes.get(k)).contains(lst.get(j)))
+						{
+							unique = true;
+							break;
+						}
+					}
+				}
+				if (unique)
+				{
+					resUnique.add(lst.get(j));
+				}
+			}
+			fullResUnique.add(resUnique);
+		}
+		TreeSet<CaredItem> caredList = new TreeSet<CaredItem>();
+		for (int i = 0; i < fullResUnique.size(); i++)
+		{
+			ListTerm lst = (ListTerm)fullResUnique.get(i);
 			CaredItem item = new CaredItem();
 			item.index = i;
 			item.size = lst.size();
@@ -579,21 +606,40 @@ public class CleaningWorld extends DefaultEnvironment implements MCAPLJobber
 
 	private ListTerm getViable(ListTerm fullRes) {
 		ListTerm viableLst = new ListTermImpl();
-		boolean viable;
-		for (int i = 0; i < fullRes.size(); i++)
+		ListTerm withBadDirt = new ListTermImpl();
+		ListTerm withClean = new ListTermImpl();
+		ListTerm withObserve = new ListTermImpl();
+		boolean badDirt = false, clean = false, observe = false; 
+
+		String[] items = fullRes.toString().substring(1, fullRes.toString().length() - 1).split(",");
+		for (String item : items)
 		{
-			viable = true;
-			String items = fullRes.get(i).toString();
-			//Splits make two items if only one item is found
-			if (items.split("clean").length > 2 || items.split("observe").length > 2 || (items.contains("clean") && items.contains("observe")))
+			if (item.matches("cleanBadDirt[A-Z]") && !badDirt)
 			{
-				viable = false;
+				withBadDirt.add(new Predicate(item));
+				badDirt = true;
 			}
-			if (viable)
+			else if (item.matches("clean[A-Z]") && !clean)
 			{
-				viableLst.add(fullRes.get(i));
+				withClean.add(new Predicate(item));
+				clean = true;
+			}
+			else if (item.matches("observe[A-Z]") && !observe)
+			{
+				withObserve.add(new Predicate(item));
+				observe = true;
+			}
+			else if (!item.matches("cleanBadDirt[A-Z]|clean[A-Z]|observe[A-Z]"))
+			{
+				withBadDirt.add(new Predicate(item));
+				withClean.add(new Predicate(item));
+				withObserve.add(new Predicate(item));
 			}
 		}
+		
+		viableLst.add(withObserve);
+		viableLst.add(withBadDirt);
+		viableLst.add(withClean);
 		return viableLst;
 	}
 	
@@ -710,12 +756,13 @@ public class CleaningWorld extends DefaultEnvironment implements MCAPLJobber
 		}
 		String dirtBelief = "dirt";
 		String badDirtBelief = "badDirt";
-		Predicate badDirt = new Predicate(badDirtBelief);
-		badDirt.addTerm(new StringTermImpl(String.valueOf(zone)));
-		Predicate dirt = new Predicate(dirtBelief);
-		dirt.addTerm(new StringTermImpl(String.valueOf(zone)));
+		String clearBelief = "clear";
+		Predicate badDirt = new Predicate(badDirtBelief + zone);
+		Predicate dirt = new Predicate(dirtBelief + zone);
+		Predicate clear = new Predicate(clearBelief + zone);
 		boolean hasDirt = false;
 		boolean hasBadDirt = false;
+		boolean isClear = false;
 		for (WorldCell[] row : world)
 		{
 			for (WorldCell cell : row)
@@ -735,6 +782,7 @@ public class CleaningWorld extends DefaultEnvironment implements MCAPLJobber
 				}
 			}
 		}
+		isClear = !hasDirt && !hasBadDirt;
 		if (hasDirt)
 		{
 			perceptAdds.add(new Pair<String, Predicate>(agName, dirt));
@@ -750,6 +798,14 @@ public class CleaningWorld extends DefaultEnvironment implements MCAPLJobber
 		else
 		{
 			perceptRems.add(new Pair<String, Predicate>(agName, badDirt));
+		}
+		if (isClear)
+		{
+			perceptAdds.add(new Pair<String, Predicate>(agName, clear));
+		}
+		else
+		{
+			perceptRems.add(new Pair<String, Predicate>(agName, clear));
 		}
 	}
 
