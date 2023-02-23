@@ -26,6 +26,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentLinkedQueue;
 
 import ail.mas.DefaultEnvironment;
+import ail.mas.scheduling.ActionScheduler;
 import ail.mas.scheduling.RoundRobinScheduler;
 import ail.semantics.AILAgent;
 import ail.syntax.Action;
@@ -59,8 +60,8 @@ interface UpdateToSimulationTime{
 public class CleaningWorld extends DefaultEnvironment implements MCAPLJobber
 {
 	public enum AgentAction {aa_moveup, aa_movedown, aa_moveright, aa_moveleft, aa_clean, aa_observedirt, aa_moveupleft, aa_moveupright, aa_movedownleft, aa_movedownright, aa_finish}
-	public enum Process {p_nochanges, p_updatedPercept, p_updatePercept};
-	private volatile Process currentState = Process.p_nochanges;
+	//public enum Process {p_nochanges, p_updatedPercept, p_updatePercept};
+	//private volatile Process currentState = Process.p_nochanges;
 	Routes routeToZones = new Routes();
 	volatile WorldCell[][] world;
 	int simulationDelay = 100;
@@ -236,13 +237,13 @@ public class CleaningWorld extends DefaultEnvironment implements MCAPLJobber
 
 						//Update agent beliefs
 						//Get actions from environment thread
-						currentState = Process.p_updatePercept;
+						/*currentState = Process.p_updatePercept;
 						
 						while (!(currentState == Process.p_updatedPercept))
 						{
 							
 						}
-						currentState = Process.p_nochanges;
+						currentState = Process.p_nochanges;*/
 					}
 				}
 				//Do dirt step
@@ -364,10 +365,8 @@ public class CleaningWorld extends DefaultEnvironment implements MCAPLJobber
 	   	{
 	   		case "assumeClean":
 	   			String zone = act.getTerm(0).toString();
-	   			removePercept(agName, new Predicate("dirt" + zone));
-	   			removePercept(agName, new Predicate("badDirt" + zone));
-	   			addPercept(agName, new Predicate("clear" + zone));
-	   			this.notifyListeners();
+	   			System.out.println("assuming clean " + zone);
+	   			perceptFin.add(new Pair<String,Message>(agName, new Message(1,"env",agName, new Predicate("observed(" + zone.toLowerCase() + ",false,false,true)"))));
 	   			break;
 	   		case "updateCare":
 	   			System.out.println("updating care values");
@@ -795,9 +794,9 @@ public class CleaningWorld extends DefaultEnvironment implements MCAPLJobber
 		String dirtBelief = "dirt";
 		String badDirtBelief = "badDirt";
 		String clearBelief = "clear";
-		Predicate badDirt = new Predicate(badDirtBelief + zone);
-		Predicate dirt = new Predicate(dirtBelief + zone);
-		Predicate clear = new Predicate(clearBelief + zone);
+		//Predicate badDirt = new Predicate(badDirtBelief + zone);
+		//Predicate dirt = new Predicate(dirtBelief + zone);
+		//Predicate clear = new Predicate(clearBelief + zone);
 		boolean hasDirt = false;
 		boolean hasBadDirt = false;
 		boolean isClear = false;
@@ -821,6 +820,12 @@ public class CleaningWorld extends DefaultEnvironment implements MCAPLJobber
 			}
 		}
 		isClear = !hasDirt && !hasBadDirt;
+		Predicate p = new Predicate("observed");
+		p.addTerm(new Predicate((zone + "").toLowerCase()));
+		p.addTerm(new Predicate(hasDirt + ""));
+		p.addTerm(new Predicate(hasBadDirt + ""));
+		p.addTerm(new Predicate(isClear + ""));
+		/*
 		if (hasDirt)
 		{
 			perceptAdds.add(new Pair<String, Predicate>(agName, dirt));
@@ -844,7 +849,8 @@ public class CleaningWorld extends DefaultEnvironment implements MCAPLJobber
 		else
 		{
 			perceptRems.add(new Pair<String, Predicate>(agName, clear));
-		}
+		}*/
+		perceptFin.add(new Pair<String,Message>(agName, new Message(1, "env", agName, p)));
 	}
 
 
@@ -930,8 +936,8 @@ public class CleaningWorld extends DefaultEnvironment implements MCAPLJobber
 	@Override
 	public void do_job() 
 	{
-		if (currentState == Process.p_updatePercept)
-		{
+		//if (currentState == Process.p_updatePercept)
+		//{
 			while (!perceptRems.isEmpty())
 			{
 				Pair<String, Predicate> p = perceptRems.poll();
@@ -948,12 +954,14 @@ public class CleaningWorld extends DefaultEnvironment implements MCAPLJobber
 			{
 				Pair<String, Message> p = perceptFin.poll();
 				addMessage(p._1, p._2);
+				System.out.println("Message: " + p._2.toString());
 			}
 			
 			this.notifyListeners();
-			currentState = Process.p_updatedPercept;
-		}
+		//	currentState = Process.p_updatedPercept;
+		//}
 		//Update GUI
+		
 		for (UpdateToWorld u : worldListeners)
 		{
 			u.worldUpdate();
