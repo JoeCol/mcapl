@@ -33,7 +33,6 @@ import javax.swing.JTabbedPane;
 public class ResponsibilityGUI {
 
 	private JFrame frmResponsibilityGwen;
-	private JSlider slider = new JSlider();
 	private Thread cwtThread;
 	public CleaningWorldThread cwt;
 	private JButton btnNewButton = new JButton("Start");
@@ -157,12 +156,10 @@ public class ResponsibilityGUI {
 		{
 			public void actionPerformed(ActionEvent e) 
 			{
-				slider.setEnabled(!started);
 				if (!started)
 				{
 					//frmResponsibilityGwen.getContentPane().removeAll();
 					//cwt = new CleaningWorldThread("/src/classes/responsibility/responsibility.ail");
-					cwt.setSimulationDelay(slider.getValue());
 					cwtThread = new Thread(cwt);
 					cwtThread.start();
 					started = true;

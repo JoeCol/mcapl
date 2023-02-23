@@ -11,6 +11,7 @@ import java.io.ObjectInputStream;
 import java.io.RandomAccessFile;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.Comparator;
 import java.util.Deque;
 import java.util.HashMap;
 import java.util.Iterator;
@@ -151,12 +152,12 @@ public class CleaningWorld extends DefaultEnvironment implements MCAPLJobber
 		}
 		
 		//For Testing
-		Predicate msgPred = new Predicate("assignment");
+		/*Predicate msgPred = new Predicate("assignment");
 		ListTermImpl lt = new ListTermImpl();
 		lt.add(new Predicate("initial"));
 		msgPred.addTerm(lt);
 		msgPred.addTerm(new Predicate("janitorial"));
-		addMessage("manager", new Message(1, "initial", "manager", msgPred));
+		addMessage("manager", new Message(1, "initial", "manager", msgPred));*/
 		
 		environmentTimer.scheduleAtFixedRate(new TimerTask()
 		{
@@ -214,6 +215,20 @@ public class CleaningWorld extends DefaultEnvironment implements MCAPLJobber
 						if (actionStack.isEmpty())
 						{
 							Predicate msgPred = new Predicate("finished");
+							String working = workingOn.get(a.getAgName());
+							if (working.contains("clean"))
+							{
+								String dirtBelief = "dirt";
+								String badDirtBelief = "badDirt";
+								String clearBelief = "clear";
+								String zone = working.substring(working.length()-1,working.length());
+								Predicate badDirt = new Predicate(badDirtBelief + zone);
+								Predicate dirt = new Predicate(dirtBelief + zone);
+								Predicate clear = new Predicate(clearBelief + zone);
+								perceptRems.add(new Pair<String, Predicate>(a.getAgName(), dirt));
+								perceptRems.add(new Pair<String, Predicate>(a.getAgName(), badDirt));
+								perceptAdds.add(new Pair<String, Predicate>(a.getAgName(), clear));
+							}
 							msgPred.addTerm(new Predicate(workingOn.get(a.getAgName())));
 							workingOn.remove(a.getAgName());
 					 		perceptFin.add(new Pair<String,Message>(a.getAgName(),new Message(1,"env",a.getAgName(),msgPred)));
@@ -347,7 +362,15 @@ public class CleaningWorld extends DefaultEnvironment implements MCAPLJobber
 	   	ListTerm fullRes;
 	   	switch (act.getFunctor())
 	   	{
+	   		case "assumeClean":
+	   			String zone = act.getTerm(0).toString();
+	   			removePercept(agName, new Predicate("dirt" + zone));
+	   			removePercept(agName, new Predicate("badDirt" + zone));
+	   			addPercept(agName, new Predicate("clear" + zone));
+	   			this.notifyListeners();
+	   			break;
 	   		case "updateCare":
+	   			System.out.println("updating care values");
 				agentCares.get(agName).put(act.getTerm(0).toString(), (int)((NumberTerm)act.getTerm(1)).solve());
 	   			break;
 	   		case "remfin":
@@ -460,7 +483,7 @@ public class CleaningWorld extends DefaultEnvironment implements MCAPLJobber
 	   			break;
 	   		case "getViable":
 	   			fullRes = (ListTerm)act.getTerm(0);
-	   			ListTerm viable = getViable(fullRes);
+	   			ListTerm viable = getViable(agName, fullRes);
 	   			viable.unifies(act.getTerm(1), theta);
 	   			break;
 	   		case "selectCared":
@@ -530,7 +553,7 @@ public class CleaningWorld extends DefaultEnvironment implements MCAPLJobber
 	   			break;
 	   		case "getBusy":
 	   			Predicate isBusy;
-	   			if (agentActions.get(agName).isEmpty())
+	   			if (!agentActions.get(agName).isEmpty())
 	   			{
 	   				isBusy = new Predicate("true");
 	   			}
@@ -604,42 +627,57 @@ public class CleaningWorld extends DefaultEnvironment implements MCAPLJobber
 		return (ListTerm)fullRes.get(caredList.last().index);
 	}
 
-	private ListTerm getViable(ListTerm fullRes) {
+	private ListTerm getViable(String agName, ListTerm fullRes) {
 		ListTerm viableLst = new ListTermImpl();
-		ListTerm withBadDirt = new ListTermImpl();
-		ListTerm withClean = new ListTermImpl();
-		ListTerm withObserve = new ListTermImpl();
-		boolean badDirt = false, clean = false, observe = false; 
+		ListTerm commonLst = new ListTermImpl();
+		ArrayList<Predicate> individual = new ArrayList<Predicate>();
 
 		String[] items = fullRes.toString().substring(1, fullRes.toString().length() - 1).split(",");
 		for (String item : items)
 		{
-			if (item.matches("cleanBadDirt[A-Z]") && !badDirt)
+			if (item.matches("cleanBadDirt[A-Z]"))
 			{
-				withBadDirt.add(new Predicate(item));
-				badDirt = true;
+				individual.add(new Predicate(item));
 			}
-			else if (item.matches("clean[A-Z]") && !clean)
+			else if (item.matches("clean[A-Z]"))
 			{
-				withClean.add(new Predicate(item));
-				clean = true;
+				individual.add(new Predicate(item));
 			}
-			else if (item.matches("observe[A-Z]") && !observe)
+			else if (item.matches("observe[A-Z]"))
 			{
-				withObserve.add(new Predicate(item));
-				observe = true;
+				individual.add(new Predicate(item));
 			}
 			else if (!item.matches("cleanBadDirt[A-Z]|clean[A-Z]|observe[A-Z]"))
 			{
-				withBadDirt.add(new Predicate(item));
-				withClean.add(new Predicate(item));
-				withObserve.add(new Predicate(item));
+				commonLst.add(new Predicate(item));
 			}
 		}
+		if (individual.size() > 0)
+		{
+			for (Predicate p : individual)
+			{
+				ListTerm tmp = new ListTermImpl();
+				for (Term t : commonLst)
+				{
+					tmp.add(t);
+				}
+				tmp.add(p);
+				tmp.sort(new Comparator<Term>() {
+					@Override
+					public int compare(Term o1, Term o2) {
+						int rst = agentCares.get(agName).get(o1.toString()).compareTo(agentCares.get(agName).get(o2.toString()));
+						return -rst;//largest first
+					}
+					
+				});
+				viableLst.add(tmp);
+			}
+		}
+		else
+		{
+			viableLst.add(commonLst);
+		}
 		
-		viableLst.add(withObserve);
-		viableLst.add(withBadDirt);
-		viableLst.add(withClean);
 		return viableLst;
 	}
 	

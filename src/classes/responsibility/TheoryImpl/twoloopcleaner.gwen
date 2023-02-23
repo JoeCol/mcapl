@@ -94,6 +94,7 @@ capacity(report)
 responsibilities([])
 workingOn([])
 
+free
 :Reasoning Rules:
 allTasks([],[]);
 allTasks([H|T], [Tasks|OtherTasks]) :- res(H, _, Name, _, _), task(Name,[Tasks],_), allTasks(T,OtherTasks);
@@ -104,9 +105,10 @@ resIn(H,[H|T],true);
 resIn(H,[H1|T],Out) :- resInFin(H,T,Out);
 :Initial Goals:
 preRes[achieve]
-//test(1)[perform]
+//test[perform]
 
 :Plans:
++!test[perform] : {True} <- .send(cleaner1, :tell, assignment(initial,report)), .send(cleaner1, :tell, assignment(manager,cleanD)), +!preRes[achieve];
 //Test getting tasks
 //+!test[perform] : {B allTasks([report,cleanA,cleanB,cleanBadDirtC,cleanBadDirtA],Out)} <- prt(Out);
 
@@ -126,13 +128,14 @@ preRes[achieve]
 
 +!failedRes(Res)[perform] : {True} <- prt("Res failed"), +!remList(Res)[perform], +!remWrk(Res)[perform]; 
 
-+!do(Res,[])[perform] : {True} <- prt("All actions done");
++!do(Res,[])[perform] : {True} <- prt("All actions done ", Res);
 +!do(Res,[H|T])[perform] : {B workingOn(Wrk), B resIn(Res,Wrk,true)} <- prt("Working On");
 +!do(Res,[H|T])[perform] : {B actionReady} <- +!action(Res,H)[perform], +!do(Res,T)[perform];
 +!do(Res,[H|T])[perform] : {~B actionReady} <- prt("Interrupted");
 
 //Do responsibility
 +!doRes([])[perform] : {True} <- prt("done all res");
++!doRes([H|T])[perform] : {B actionReady, B res(H,_,none,_,_)} <- prt("No task with ", H), +!doRes(T)[perform];
 +!doRes([H|T])[perform] : {B actionReady, B res(H,_,TName,_,_), B task(TName,[Task],[State])} <- +!do(H,[Task|State])[perform], +!doRes(T)[perform];
 +!doRes([H|T])[perform] : {B actionReady, B res(H,_,TName,_,_), B task(TName,Task,[])} <- +!do(H,Task)[perform], +!doRes(T)[perform];
 +!doRes([H|T])[perform] : {B actionReady, B res(H,_,TName,_,_), B task(TName,[],State)} <- +!do(H, State)[perform], +!doRes(T)[perform];
@@ -141,7 +144,7 @@ preRes[achieve]
 //Prepare task list
 +!preRes[achieve] : {~B actionReady} <- *actionReady;
 +!preRes[achieve] : {B actionReady, B responsibilities([])} <- -actionReady;
-+!preRes[achieve] : {B actionReady, B responsibilities(Res)} <- getCombos(Res,Combo), prt(Combo), getViable(Combo,Viable), prt(Viable), selectCared(Viable,Out), prt(Out), +!doRes(Out)[perform], -actionReady;
++!preRes[achieve] : {B actionReady, B responsibilities(Res)} <- prt("Now Ready"), getViable(Res,Viable), prt(Viable), selectCared(Viable,Out), prt(Out), +!doRes(Out)[perform], -actionReady;
 
 //Manage lists
 +!addRes(Res)[perform] : {B responsibilities(L)} <- +.lock, -responsibilities(L), addResItem(Res,L,Out), +responsibilities(Out), -.lock;
@@ -168,12 +171,12 @@ preRes[achieve]
 +.received(:tell, X) : {True} <- prt(X), printstate, break;
 
 //Specific Actions & states
-+!sendReport(true)[perform] : {~B busy} <- +busy, getName(Name), .send(manager,:tell, busy(B,Name)), .send(Name,:tell,finished(Res));
-+!sendReport(true)[perform] : {B busy} <- prt("not doing report");
-+!sendReport(false)[perform] : {B busy} <- -busy, getName(Name), .send(manager,:tell, busy(B,Name)), .send(Name,:tell,finished(Res));
-+!sendReport(false)[perform] : {~B busy} <- prt("not doing report");
++!sendReport(true)[perform] : {B free} <- prt("Busy"), -free, getName(Name), .send(manager,:tell, busy(Name,true)), .send(Name,:tell,finished(Res));
++!sendReport(true)[perform] : {~B free} <- prt("not doing report");
++!sendReport(false)[perform] : {~B free} <- prt("Not Busy"), +free, getName(Name), .send(manager,:tell, busy(Name,false)), .send(Name,:tell,finished(Res));
++!sendReport(false)[perform] : {B free} <- prt("not doing report");
 
-+!action(Res,sendStatus)[perform] : {True} <- prt("Send Report to Manager"), getBusy(B), +!sendReport(B)[perform];
++!action(Res,sendStatus)[perform] : {True} <- getBusy(B), prt("Send Report to Manager ", B), +!sendReport(B)[perform];
 +!action(Res,cleanroomA)[perform] : {True} <- clearActions, doing(Res), goToZone("A"), clean("A");
 +!action(Res,cleanroomB)[perform] : {True} <- clearActions, doing(Res), goToZone("B"), clean("B");
 +!action(Res,cleanroomC)[perform] : {True} <- clearActions, doing(Res), goToZone("C"), clean("C");
