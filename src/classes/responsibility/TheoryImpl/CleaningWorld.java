@@ -276,6 +276,7 @@ public class CleaningWorld extends DefaultEnvironment implements MCAPLJobber
 		getCell(newDirt._1,newDirt._2).setDirty(bad);
 		totalDirt++;
 		if (bad) {totalBadDirt++;}
+		System.out.print("Added Dirt to " + newDirt._1 + " " + newDirt._2 + " is bad " + bad);
 		dirtRecord.addRecord(remainingSteps, totalDirt, totalBadDirt);
 		for (UpdateToDirtLevels u : dirtListeners)
 		{
@@ -809,21 +810,26 @@ public class CleaningWorld extends DefaultEnvironment implements MCAPLJobber
 		boolean hasDirt = false;
 		boolean hasBadDirt = false;
 		boolean isClear = false;
-		for (WorldCell[] row : world)
+		System.out.println(zone + " observed");
+		for (int i = 0; i < world.length; i++)
 		{
-			for (WorldCell cell : row)
+			WorldCell[] row = world[i];
+			for (int j = 0; j < row.length; j++)
 			{
+				WorldCell cell = row[j];
 				if (cell.getZoneID() == zone)
 				{
 					if (cell.hasBadDirt())
 					{
 						hasDirt = true;
 						hasBadDirt = true;
+						System.out.println(zone + " has bad dirt at " + j + " " + i);
 						break;
 					}
 					else if (cell.hasDirt())
 					{
 						hasDirt = true;
+						System.out.println(zone + " has dirt at " + j + " " + i);
 					}
 				}
 			}
