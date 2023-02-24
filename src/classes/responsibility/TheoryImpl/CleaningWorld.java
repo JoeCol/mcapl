@@ -216,23 +216,27 @@ public class CleaningWorld extends DefaultEnvironment implements MCAPLJobber
 						if (actionStack.isEmpty())
 						{
 							Predicate msgPred = new Predicate("finished");
-							String working = workingOn.get(a.getAgName());
-							if (working.contains("clean"))
+							if (workingOn.containsKey(a.getAgName()))
 							{
-								String dirtBelief = "dirt";
-								String badDirtBelief = "badDirt";
-								String clearBelief = "clear";
-								String zone = working.substring(working.length()-1,working.length());
-								Predicate badDirt = new Predicate(badDirtBelief + zone);
-								Predicate dirt = new Predicate(dirtBelief + zone);
-								Predicate clear = new Predicate(clearBelief + zone);
-								perceptRems.add(new Pair<String, Predicate>(a.getAgName(), dirt));
-								perceptRems.add(new Pair<String, Predicate>(a.getAgName(), badDirt));
-								perceptAdds.add(new Pair<String, Predicate>(a.getAgName(), clear));
+								String working = workingOn.get(a.getAgName());
+								if (working.contains("clean"))
+								{
+									char zone = working.substring(working.length()-1,working.length()).charAt(0);
+									Predicate p = new Predicate("observed");
+									p.addTerm(new Predicate((zone + "").toLowerCase()));
+									p.addTerm(new Predicate("false"));
+									p.addTerm(new Predicate("false"));
+									p.addTerm(new Predicate("true"));
+									perceptFin.add(new Pair<String,Message>(a.getAgName(),new Message(1,"env",a.getAgName(),p)));
+								}
+								msgPred.addTerm(new Predicate(workingOn.get(a.getAgName())));
+								workingOn.remove(a.getAgName());
+						 		perceptFin.add(new Pair<String,Message>(a.getAgName(),new Message(1,"env",a.getAgName(),msgPred)));
 							}
-							msgPred.addTerm(new Predicate(workingOn.get(a.getAgName())));
-							workingOn.remove(a.getAgName());
-					 		perceptFin.add(new Pair<String,Message>(a.getAgName(),new Message(1,"env",a.getAgName(),msgPred)));
+							else
+							{
+								System.out.println("Should never happen");
+							}
 						}
 
 						//Update agent beliefs
@@ -364,9 +368,14 @@ public class CleaningWorld extends DefaultEnvironment implements MCAPLJobber
 	   	switch (act.getFunctor())
 	   	{
 	   		case "assumeClean":
-	   			String zone = act.getTerm(0).toString();
+	   			char zone = act.getTerm(0).toString().charAt(1);
 	   			System.out.println("assuming clean " + zone);
-	   			perceptFin.add(new Pair<String,Message>(agName, new Message(1,"env",agName, new Predicate("observed(" + zone.toLowerCase() + ",false,false,true)"))));
+	   			Predicate p = new Predicate("observed");
+	   			p.addTerm(new Predicate((zone + "").toLowerCase()));
+	   			p.addTerm(new Predicate("false"));
+	   			p.addTerm(new Predicate("false"));
+	   			p.addTerm(new Predicate("true"));
+	   			perceptFin.add(new Pair<String,Message>(agName, new Message(1,"env",agName, p)));
 	   			break;
 	   		case "updateCare":
 	   			System.out.println("updating care values");

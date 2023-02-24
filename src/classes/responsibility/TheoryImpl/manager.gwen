@@ -187,12 +187,12 @@ startup[perform]
 +.received(:tell, observed(Zone,_,_,true)) : {True} <- prt("Clear ", Zone), -dirt(Zone), -badDirt(Zone), +clear(Zone);
 +.received(:tell, observed(Zone,_,true,_)) : {True}  <- prt("Bad Dirt ", Zone), +dirt(Zone), +badDirt(Zone), -clear(Zone);
 +.received(:tell, observed(Zone,true,_,_)) : {True}  <- prt("Dirt ", Zone), +dirt(Zone), -badDirt(Zone), -clear(Zone);
-
+				  
 +.received(:tell, busy(A,true)) : {True} <- -free(A), prt("Busy ",A);
 +.received(:tell, busy(A,false)) : {True} <- +free(A),prt("Free ",A);
 
 +.received(:tell, A) : {True} <- prt("Received Unknown Message ",A);
-//
+//Update Care Values
 +dirt(a) : {True} <- -care(cleanA,1), +care(cleanA,6), updateCare(cleanA,6);
 +dirt(b) : {True} <- -care(cleanB,1), +care(cleanB,6), updateCare(cleanB,6);
 +dirt(c) : {True} <- -care(cleanC,1), +care(cleanC,6), updateCare(cleanC,6);
