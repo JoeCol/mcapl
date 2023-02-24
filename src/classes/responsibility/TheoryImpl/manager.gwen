@@ -259,7 +259,7 @@ startup[perform]
 //Prepare task list
 +!preRes[achieve] : {~B actionReady} <- prt("Waiting"), *actionReady;
 +!preRes[achieve] : {B actionReady, B responsibilities([])} <- prt("No Res to do"), -actionReady;
-+!preRes[achieve] : {B actionReady, B responsibilities(Res)} <- prt("Now Ready"), printstate, getViable(Res,Viable), prt(Viable), selectCared(Viable,Out), prt(Out), +!doRes(Out)[perform], -actionReady;
++!preRes[achieve] : {B actionReady, B responsibilities(Res)} <- prt("Now Ready"), getViable(Res,Viable), prt(Viable), selectCared(Viable,Out), prt(Out), +!doRes(Out)[perform], -actionReady;
 
 //Manage lists
 +!addRes(Res)[perform] : {B responsibilities(L)} <- +.lock, -responsibilities(L), addResItem(Res,L,Out), +responsibilities(Out), -.lock;
@@ -300,16 +300,16 @@ startup[perform]
 +!action(Res,cleanroomI)[perform] : {B freeAgent(Ag)} <- +!delegate(Res,Ag)[perform], assumeClean("I"), .send(manager,:tell,finished(Res));
 +!action(Res,cleanroomJ)[perform] : {B freeAgent(Ag)} <- +!delegate(Res,Ag)[perform], assumeClean("J"), .send(manager,:tell,finished(Res));
 
-+!action(Res,cleanroomA)[perform] : {True} <- clearActions, doing(Res), goToZone("A"), clean("A"), assumeClean("A");
-+!action(Res,cleanroomB)[perform] : {True} <- clearActions, doing(Res), goToZone("B"), clean("B"), assumeClean("B");
-+!action(Res,cleanroomC)[perform] : {True} <- clearActions, doing(Res), goToZone("C"), clean("C"), assumeClean("C");
-+!action(Res,cleanroomD)[perform] : {True} <- clearActions, doing(Res), goToZone("D"), clean("D"), assumeClean("D");
-+!action(Res,cleanroomE)[perform] : {True} <- clearActions, doing(Res), goToZone("E"), clean("E"), assumeClean("E");
-+!action(Res,cleanroomF)[perform] : {True} <- clearActions, doing(Res), goToZone("F"), clean("F"), assumeClean("F");
-+!action(Res,cleanroomG)[perform] : {True} <- clearActions, doing(Res), goToZone("G"), clean("G"), assumeClean("G");
-+!action(Res,cleanroomH)[perform] : {True} <- clearActions, doing(Res), goToZone("H"), clean("H"), assumeClean("H");
-+!action(Res,cleanroomI)[perform] : {True} <- clearActions, doing(Res), goToZone("I"), clean("I"), assumeClean("I");
-+!action(Res,cleanroomJ)[perform] : {True} <- clearActions, doing(Res), goToZone("J"), clean("J"), assumeClean("J");
++!action(Res,cleanroomA)[perform] : {True} <- printstate, clearActions, doing(Res), goToZone("A"), clean("A"), assumeClean("A");
++!action(Res,cleanroomB)[perform] : {True} <- printstate, clearActions, doing(Res), goToZone("B"), clean("B"), assumeClean("B");
++!action(Res,cleanroomC)[perform] : {True} <- printstate, clearActions, doing(Res), goToZone("C"), clean("C"), assumeClean("C");
++!action(Res,cleanroomD)[perform] : {True} <- printstate, clearActions, doing(Res), goToZone("D"), clean("D"), assumeClean("D");
++!action(Res,cleanroomE)[perform] : {True} <- printstate, clearActions, doing(Res), goToZone("E"), clean("E"), assumeClean("E");
++!action(Res,cleanroomF)[perform] : {True} <- printstate, clearActions, doing(Res), goToZone("F"), clean("F"), assumeClean("F");
++!action(Res,cleanroomG)[perform] : {True} <- printstate, clearActions, doing(Res), goToZone("G"), clean("G"), assumeClean("G");
++!action(Res,cleanroomH)[perform] : {True} <- printstate, clearActions, doing(Res), goToZone("H"), clean("H"), assumeClean("H");
++!action(Res,cleanroomI)[perform] : {True} <- printstate, clearActions, doing(Res), goToZone("I"), clean("I"), assumeClean("I");
++!action(Res,cleanroomJ)[perform] : {True} <- printstate, clearActions, doing(Res), goToZone("J"), clean("J"), assumeClean("J");
 
 +!action(Res,observeA)[perform] : {True} <- clearActions, doing(Res), goToZone("A"), observe("A");
 +!action(Res,observeB)[perform] : {True} <- clearActions, doing(Res), goToZone("B"), observe("B");

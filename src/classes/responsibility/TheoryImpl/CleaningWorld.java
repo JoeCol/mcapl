@@ -219,7 +219,7 @@ public class CleaningWorld extends DefaultEnvironment implements MCAPLJobber
 							if (workingOn.containsKey(a.getAgName()))
 							{
 								String working = workingOn.get(a.getAgName());
-								if (working.contains("clean"))
+								/*if (working.contains("clean"))
 								{
 									char zone = working.substring(working.length()-1,working.length()).charAt(0);
 									Predicate p = new Predicate("observed");
@@ -228,7 +228,7 @@ public class CleaningWorld extends DefaultEnvironment implements MCAPLJobber
 									p.addTerm(new Predicate("false"));
 									p.addTerm(new Predicate("true"));
 									perceptFin.add(new Pair<String,Message>(a.getAgName(),new Message(1,"env",a.getAgName(),p)));
-								}
+								}*/
 								msgPred.addTerm(new Predicate(workingOn.get(a.getAgName())));
 								workingOn.remove(a.getAgName());
 						 		perceptFin.add(new Pair<String,Message>(a.getAgName(),new Message(1,"env",a.getAgName(),msgPred)));
