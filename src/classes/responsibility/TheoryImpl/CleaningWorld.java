@@ -46,15 +46,7 @@ import ajpf.MCAPLJobber;
 import gov.nasa.jpf.util.Pair;
 
 interface UpdateToWorld{
-	void worldUpdate();
-}
-
-interface UpdateToDirtLevels{
-	void dirtLevelUpdate(int dirt, int badDirt);
-}
-
-interface UpdateToSimulationTime{
-	void simulationTimeUpdate(int time);
+	void worldUpdate(int time, int dirt, int badDirt, WorldCell[][] world, HashMap<String, Pair<Integer,Integer>> agentLocations, HashMap<String, Color> agentColours);
 }
 
 public class CleaningWorld extends DefaultEnvironment implements MCAPLJobber
@@ -63,25 +55,23 @@ public class CleaningWorld extends DefaultEnvironment implements MCAPLJobber
 	//public enum Process {p_nochanges, p_updatedPercept, p_updatePercept};
 	//private volatile Process currentState = Process.p_nochanges;
 	Routes routeToZones = new Routes();
-	volatile WorldCell[][] world;
-	int simulationDelay = 100;
+	WorldCell[][] world;
 	int remainingSteps = 1;
 	Timer environmentTimer = new Timer();
 	Settings currentSettings;
 	RoundRobinScheduler rrs = new RoundRobinScheduler();
 	ArrayList<UpdateToWorld> worldListeners = new ArrayList<UpdateToWorld>();
-	ArrayList<UpdateToDirtLevels> dirtListeners = new ArrayList<UpdateToDirtLevels>();
-	ArrayList<UpdateToSimulationTime> simListeners = new ArrayList<UpdateToSimulationTime>();
 	HashMap<String, Color> agentColours = new HashMap<String, Color>();
 	HashMap<Character, ArrayList<Pair<Integer, Integer>>> zoneSquares = new HashMap<Character, ArrayList<Pair<Integer, Integer>>>();
 	
 	HashMap<String, ArrayDeque<AgentAction>> agentActions = new HashMap<String, ArrayDeque<AgentAction>>();
-	ConcurrentHashMap<String, String> workingOn = new ConcurrentHashMap<String, String>();
+	HashMap<String, Pair<Integer,Integer>> agentLocations = new HashMap<String, Pair<Integer,Integer>>();
+	HashMap<String, String> workingOn = new HashMap<String, String>();
 	HashMap<String, HashMap<String, Integer>> agentCares = new HashMap<String, HashMap<String,Integer>>();
 	
-	ConcurrentLinkedQueue<Pair<String, Predicate>> perceptAdds = new ConcurrentLinkedQueue<Pair<String, Predicate>>();
-	ConcurrentLinkedQueue<Pair<String, Predicate>> perceptRems = new ConcurrentLinkedQueue<Pair<String, Predicate>>();
-	ConcurrentLinkedQueue<Pair<String, Message>> perceptFin = new ConcurrentLinkedQueue<Pair<String,Message>>();
+	ArrayDeque<Pair<String, Predicate>> perceptAdds = new ArrayDeque<Pair<String, Predicate>>();
+	ArrayDeque<Pair<String, Predicate>> perceptRems = new ArrayDeque<Pair<String, Predicate>>();
+	ArrayDeque<Pair<String, Message>> perceptFin = new ArrayDeque<Pair<String,Message>>();
 	
 	Random r = new Random();
 	
@@ -106,16 +96,6 @@ public class CleaningWorld extends DefaultEnvironment implements MCAPLJobber
 		worldListeners.add(u);
 	}
 	
-	public void addDirtListeners(UpdateToDirtLevels u)
-	{
-		dirtListeners.add(u);
-	}
-	
-	public void addSimListeners(UpdateToSimulationTime u)
-	{
-		simListeners.add(u);
-	}
-	
 	@Override
 	public void init_after_adding_agents() 
 	{
@@ -123,19 +103,7 @@ public class CleaningWorld extends DefaultEnvironment implements MCAPLJobber
 		int x = 1;
 		for (AILAgent a : getAgents())
 		{	
-			ArrayList<Term> terms = new ArrayList<Term>();
-			terms.add(new NumberTermImpl(x++));
-			terms.add(new NumberTermImpl(1));
-			Predicate p = new Predicate("at");
-			p.setTerms(terms);
-			addPercept(a.getAgName(), p);
-			
-			ArrayList<Term> term = new ArrayList<Term>();
-			term.add(new StringTermImpl("A"));
-			Predicate p1 = new Predicate("zone");
-			p1.setTerms(term);
-			addPercept(a.getAgName(), p1);
-			
+			agentLocations.put(a.getAgName(), new Pair<Integer,Integer>(x++,1));
 			agentColours.put(a.getAgName(), new Color(r.nextInt(0xFFFFFF)));
 			agentActions.put(a.getAgName(), new ArrayDeque<AgentAction>());
 			
@@ -152,158 +120,24 @@ public class CleaningWorld extends DefaultEnvironment implements MCAPLJobber
 			agentCares.put(a.getAgName(), care);
 		}
 		
-		//For Testing
-		/*Predicate msgPred = new Predicate("assignment");
-		ListTermImpl lt = new ListTermImpl();
-		lt.add(new Predicate("initial"));
-		msgPred.addTerm(lt);
-		msgPred.addTerm(new Predicate("janitorial"));
-		addMessage("manager", new Message(1, "initial", "manager", msgPred));*/
-		
-		environmentTimer.scheduleAtFixedRate(new TimerTask()
-		{
-			//method to run through thread, delay is caused by timer, works as a simulation step
-			public void run()
-			{	
-				//Get ONE action from each agent
-				for (AILAgent a : getAgents())
-				{
-					ArrayDeque<AgentAction> actionStack = agentActions.get(a.getAgName());
-					if (!actionStack.isEmpty())
-					{
-						AgentAction action = actionStack.pop();
-						Pair<Integer, Integer> agentLocation = getAgentLocation(a.getAgName());
-						if (agentLocation._1 != -1)
-						{
-							switch (action)
-							{
-							case aa_clean:
-								clean(agentLocation._1, agentLocation._2); 
-								break;
-							case aa_movedown:
-								moveAgent(a.getAgName(), agentLocation._1, agentLocation._2, agentLocation._1, agentLocation._2 + 1);
-								break;
-							case aa_moveleft:
-								moveAgent(a.getAgName(), agentLocation._1, agentLocation._2, agentLocation._1 - 1, agentLocation._2);
-								break;
-							case aa_moveright:
-								moveAgent(a.getAgName(), agentLocation._1, agentLocation._2, agentLocation._1 + 1, agentLocation._2);
-								break;
-							case aa_moveup:
-								moveAgent(a.getAgName(), agentLocation._1, agentLocation._2, agentLocation._1, agentLocation._2 - 1);
-								break;
-							case aa_movedownleft:
-								moveAgent(a.getAgName(), agentLocation._1, agentLocation._2, agentLocation._1 - 1, agentLocation._2 + 1);
-								break;
-							case aa_movedownright:
-								moveAgent(a.getAgName(), agentLocation._1, agentLocation._2, agentLocation._1 + 1, agentLocation._2 + 1);
-								break;
-							case aa_moveupleft:
-								moveAgent(a.getAgName(), agentLocation._1, agentLocation._2, agentLocation._1 - 1, agentLocation._2 - 1);
-								break;
-							case aa_moveupright:
-								moveAgent(a.getAgName(), agentLocation._1, agentLocation._2, agentLocation._1 + 1, agentLocation._2 - 1);
-								break;
-							case aa_observedirt:
-								observeDirt(a.getAgName());
-								break;
-							case aa_finish:
-								perceptAdds.add(new Pair<String, Predicate>(a.getAgName(), new Predicate("finished")));
-								break;
-							}
-						}
-						//If last time inform agent
-						if (actionStack.isEmpty())
-						{
-							Predicate msgPred = new Predicate("finished");
-							if (workingOn.containsKey(a.getAgName()))
-							{
-								String working = workingOn.get(a.getAgName());
-								/*if (working.contains("clean"))
-								{
-									char zone = working.substring(working.length()-1,working.length()).charAt(0);
-									Predicate p = new Predicate("observed");
-									p.addTerm(new Predicate((zone + "").toLowerCase()));
-									p.addTerm(new Predicate("false"));
-									p.addTerm(new Predicate("false"));
-									p.addTerm(new Predicate("true"));
-									perceptFin.add(new Pair<String,Message>(a.getAgName(),new Message(1,"env",a.getAgName(),p)));
-								}*/
-								msgPred.addTerm(new Predicate(workingOn.get(a.getAgName())));
-								workingOn.remove(a.getAgName());
-						 		perceptFin.add(new Pair<String,Message>(a.getAgName(),new Message(1,"env",a.getAgName(),msgPred)));
-							}
-							else
-							{
-								System.out.println("Should never happen");
-							}
-						}
-
-						//Update agent beliefs
-						//Get actions from environment thread
-						/*currentState = Process.p_updatePercept;
-						
-						while (!(currentState == Process.p_updatedPercept))
-						{
-							
-						}
-						currentState = Process.p_nochanges;*/
-					}
-				}
-				//Do dirt step
-				dirtNum = (++dirtNum) % currentSettings.getDirtInterval();
-				if (dirtNum == 0)
-				{
-					badDirtNum = (++badDirtNum) % currentSettings.getBadDirtInterval();
-					addDirt(badDirtNum == 0);
-				}
-				remainingSteps--;
-				for (UpdateToSimulationTime u : simListeners)
-				{
-					u.simulationTimeUpdate(remainingSteps);
-				}
-			}
-
-			
-		}, 0, simulationDelay);
-		
 	}
 	
 	public void addDirt(boolean bad) 
 	{
-		Collections.shuffle(possibleDirtLocations);//to ensure that dirt is not evenly distributed as it is cleaned.
-		Pair<Integer,Integer> newDirt = possibleDirtLocations.remove(0);
-		getCell(newDirt._1,newDirt._2).setDirty(bad);
-		totalDirt++;
-		if (bad) {totalBadDirt++;}
-		System.out.print("Added Dirt to " + newDirt._1 + " " + newDirt._2 + " is bad " + bad);
-		dirtRecord.addRecord(remainingSteps, totalDirt, totalBadDirt);
-		for (UpdateToDirtLevels u : dirtListeners)
+		if (possibleDirtLocations.size() > 0)
 		{
-			u.dirtLevelUpdate(totalDirt, totalBadDirt);
+			Collections.shuffle(possibleDirtLocations);//to ensure that dirt is not evenly distributed as it is cleaned.
+			Pair<Integer,Integer> newDirt = possibleDirtLocations.remove(0);
+			getCell(newDirt._1,newDirt._2).setDirty(bad);
+			totalDirt++;
+			if (bad) {totalBadDirt++;}
+			dirtRecord.addRecord(remainingSteps, totalDirt, totalBadDirt);
 		}
 	}
 
 	public Pair<Integer, Integer> getAgentLocation(String agName) 
 	{
-		
-		for (AILAgent a : getAgents())
-		{
-			if (agName.equals(a.getAgName()))
-			{
-				Iterator<Literal> it = a.getBB().getPercepts();
-				while (it.hasNext())
-				{
-					Literal l = it.next();
-					if (l.getFunctor().equals("at"))
-					{
-						return new Pair<Integer, Integer>((int)((NumberTerm)l.getTerm(0)).solve(),(int)((NumberTerm)l.getTerm(1)).solve());
-					}
-				}
-			}
-		}
-		System.out.println("Could not find agent location:" + agName);
-		return new Pair<Integer, Integer>(-1,-1);
+		return agentLocations.get(agName);
 	}
 
 	public CleaningWorld(int simSteps, int dirtInt, int badDirtInt, String worldLoc)
@@ -368,6 +202,9 @@ public class CleaningWorld extends DefaultEnvironment implements MCAPLJobber
 	   	ListTerm fullRes;
 	   	switch (act.getFunctor())
 	   	{
+	   		case "addFin":
+	   			agentActions.get(agName).add(AgentAction.aa_finish);
+	   			break;
 	   		case "assumeClean":
 	   			char zone = act.getTerm(0).toString().charAt(1);
 	   			System.out.println("assuming clean " + zone);
@@ -377,10 +214,7 @@ public class CleaningWorld extends DefaultEnvironment implements MCAPLJobber
 	   			p.addTerm(new Predicate("false"));
 	   			p.addTerm(new Predicate("true"));
 	   			perceptFin.add(new Pair<String,Message>(agName, new Message(1,"env",agName, p)));
-	   			break;
-	   		case "updateCare":
-	   			System.out.println("updating care values");
-				agentCares.get(agName).put(act.getTerm(0).toString(), (int)((NumberTerm)act.getTerm(1)).solve());
+	   			updateCareValues(agName,zone + "",false,false);
 	   			break;
 	   		case "remfin":
 	   			removePercept(agName, new Predicate("finished"));
@@ -559,18 +393,6 @@ public class CleaningWorld extends DefaultEnvironment implements MCAPLJobber
 	   			break;
 	   		case "doing":
 	   			workingOn.put(agName, act.getTerm(0).toString());
-	   			break;
-	   		case "getBusy":
-	   			Predicate isBusy;
-	   			if (!agentActions.get(agName).isEmpty())
-	   			{
-	   				isBusy = new Predicate("true");
-	   			}
-	   			else
-	   			{
-	   				isBusy = new Predicate("false");
-	   			}
-	   			isBusy.unifies(act.getTerm(0), theta);
 	   			break;
 	   		case "getName":
 	   			Predicate uName = new Predicate(agName);
@@ -777,36 +599,14 @@ public class CleaningWorld extends DefaultEnvironment implements MCAPLJobber
 			prevSquare = nextSquare;
 			
 		}
-		actions.add(AgentAction.aa_finish);
 		agentActions.get(agName).addAll(actions);
 	}
 
 	private void observeDirt(String agName) 
 	{
 		//Get zone for agent
-		char zone = 0;
-		for (AILAgent a : getAgents())
-		{
-			if (agName.equals(a.getAgName()))
-			{
-				Iterator<Literal> it = a.getBB().getPercepts();
-				while (it.hasNext())
-				{
-					Literal l = it.next();
-					if (l.getFunctor().equals("zone"))
-					{
-						zone = ((StringTerm)l.getTerm(0)).getString().charAt(0);
-						break;
-					}
-				}
-			}
-		}
-		String dirtBelief = "dirt";
-		String badDirtBelief = "badDirt";
-		String clearBelief = "clear";
-		//Predicate badDirt = new Predicate(badDirtBelief + zone);
-		//Predicate dirt = new Predicate(dirtBelief + zone);
-		//Predicate clear = new Predicate(clearBelief + zone);
+		Pair<Integer,Integer> l = agentLocations.get(agName);
+		char zone = getCell(l._1,l._2).getZoneID();
 		boolean hasDirt = false;
 		boolean hasBadDirt = false;
 		boolean isClear = false;
@@ -840,41 +640,26 @@ public class CleaningWorld extends DefaultEnvironment implements MCAPLJobber
 		p.addTerm(new Predicate(hasDirt + ""));
 		p.addTerm(new Predicate(hasBadDirt + ""));
 		p.addTerm(new Predicate(isClear + ""));
-		/*
-		if (hasDirt)
-		{
-			perceptAdds.add(new Pair<String, Predicate>(agName, dirt));
-		}
-		else
-		{
-			perceptRems.add(new Pair<String, Predicate>(agName, dirt));
-		}
-		if (hasBadDirt)
-		{
-			perceptAdds.add(new Pair<String, Predicate>(agName, badDirt));
-		}
-		else
-		{
-			perceptRems.add(new Pair<String, Predicate>(agName, badDirt));
-		}
-		if (isClear)
-		{
-			perceptAdds.add(new Pair<String, Predicate>(agName, clear));
-		}
-		else
-		{
-			perceptRems.add(new Pair<String, Predicate>(agName, clear));
-		}*/
+		updateCareValues(agName,zone + "",hasDirt,hasBadDirt);
 		perceptFin.add(new Pair<String,Message>(agName, new Message(1, "env", agName, p)));
 	}
 
+
+	private void updateCareValues(String agName, String zone, boolean hasDirt, boolean hasBadDirt) 
+	{
+		int dirtCare = hasDirt ? 6 : 1;
+		int badDirtCare = hasBadDirt ? 7 : 2;
+		String dirtCareStr = "clean" + zone.toUpperCase();
+		String baddirtCareStr = "cleanBadDirt" + zone.toUpperCase();
+		agentCares.get(agName).put(dirtCareStr, dirtCare);
+		agentCares.get(agName).put(baddirtCareStr, badDirtCare);
+	}
 
 	//Add move actions to agentactions stack
 	private void goToZone(String agName, char zone) 
 	{
 		//get route
 		ArrayDeque<AgentAction> moveActions = routeToZones.actionsToZone(world, getAgentLocation(agName), zoneSquares.get(zone).get(0));
-		moveActions.add(AgentAction.aa_finish);
 		agentActions.get(agName).addAll(moveActions);
 	}
 
@@ -889,57 +674,15 @@ public class CleaningWorld extends DefaultEnvironment implements MCAPLJobber
 			totalDirt--;
 			possibleDirtLocations.add(new Pair<Integer,Integer>(x,y));
 			dirtRecord.addRecord(remainingSteps, totalDirt, totalBadDirt);
-			for (UpdateToDirtLevels u : dirtListeners)
-			{
-				u.dirtLevelUpdate(totalDirt, totalBadDirt);
-			}
 		}
 		getCell(x, y).clean();
 		
 	}
 	
 	//Change environment percepts
-	private void moveAgent(String agName, int x, int y, int newX, int newY)
+	private void moveAgent(String agName, int x, int y)
 	{
-		//boolean occupied = getCell(newX, newY).isOccupied();
-		boolean occupied = false;
-		if (!occupied)
-		{
-			getCell(x, y).setOccupied(false);
-			//Remove old at belief
-			ArrayList<Term> terms = new ArrayList<Term>();
-			terms.add(new NumberTermImpl(x));
-			terms.add(new NumberTermImpl(y));
-			Predicate p = new Predicate("at");
-			p.setTerms(terms);
-			perceptRems.add(new Pair<String, Predicate>(agName, p));
-			
-			//Set New at belief
-			Predicate pAt = new Predicate("at");
-			ArrayList<Term> termsAt = new ArrayList<Term>();
-			termsAt.clear();
-			termsAt.add(new NumberTermImpl(newX));
-			termsAt.add(new NumberTermImpl(newY));
-			pAt.setTerms(termsAt);
-			perceptAdds.add(new Pair<String, Predicate>(agName, pAt));
-			
-			//Update zone belief
-			ArrayList<Term> zoneTerms = new ArrayList<Term>();
-			zoneTerms.add(new StringTermImpl(String.valueOf(getCell(x,y).getZoneID())));
-			Predicate p1 = new Predicate("zone");
-			p1.setTerms(zoneTerms);
-			perceptRems.add(new Pair<String, Predicate>(agName, p1));
-			
-			ArrayList<Term> zoneUpdateTerms = new ArrayList<Term>();
-			zoneUpdateTerms.add(new StringTermImpl(String.valueOf(getCell(newX,newY).getZoneID())));
-			Predicate up1 = new Predicate("zone");
-			up1.setTerms(zoneUpdateTerms);
-			up1.setTerms(zoneUpdateTerms);
-			perceptAdds.add(new Pair<String, Predicate>(agName, up1));
-			getCell(newX, newY).setOccupied(true);
-		}
-		
-		
+		agentLocations.put(agName, new Pair<Integer,Integer>(x,y));		
 	}
 
 	@Override
@@ -951,35 +694,104 @@ public class CleaningWorld extends DefaultEnvironment implements MCAPLJobber
 	@Override
 	public void do_job() 
 	{
-		//if (currentState == Process.p_updatePercept)
-		//{
-			while (!perceptRems.isEmpty())
+		try {
+			Thread.sleep(10);
+		} catch (InterruptedException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+		for (AILAgent a : getAgents())
+		{
+			ArrayDeque<AgentAction> actionStack = agentActions.get(a.getAgName());
+			if (!actionStack.isEmpty())
 			{
-				Pair<String, Predicate> p = perceptRems.poll();
-				//System.out.println("Removing percept " + p._2.toString() + " from agent " + p._1);
-				removePercept(p._1, p._2);
+				AgentAction action = actionStack.pop();
+				Pair<Integer, Integer> agentLocation = getAgentLocation(a.getAgName());
+				if (agentLocation._1 != -1)
+				{
+					switch (action)
+					{
+					case aa_clean:
+						clean(agentLocation._1, agentLocation._2); 
+						break;
+					case aa_movedown:
+						moveAgent(a.getAgName(), agentLocation._1, agentLocation._2 + 1);
+						break;
+					case aa_moveleft:
+						moveAgent(a.getAgName(), agentLocation._1 - 1, agentLocation._2);
+						break;
+					case aa_moveright:
+						moveAgent(a.getAgName(), agentLocation._1 + 1, agentLocation._2);
+						break;
+					case aa_moveup:
+						moveAgent(a.getAgName(), agentLocation._1, agentLocation._2 - 1);
+						break;
+					case aa_movedownleft:
+						moveAgent(a.getAgName(), agentLocation._1 - 1, agentLocation._2 + 1);
+						break;
+					case aa_movedownright:
+						moveAgent(a.getAgName(), agentLocation._1 + 1, agentLocation._2 + 1);
+						break;
+					case aa_moveupleft:
+						moveAgent(a.getAgName(), agentLocation._1 - 1, agentLocation._2 - 1);
+						break;
+					case aa_moveupright:
+						moveAgent(a.getAgName(), agentLocation._1 + 1, agentLocation._2 - 1);
+						break;
+					case aa_observedirt:
+						observeDirt(a.getAgName());
+						break;
+					case aa_finish:
+						perceptAdds.add(new Pair<String, Predicate>(a.getAgName(), new Predicate("finished")));
+						Predicate msgPred = new Predicate("finished");
+						if (workingOn.containsKey(a.getAgName()))
+						{
+							msgPred.addTerm(new Predicate(workingOn.get(a.getAgName())));
+							workingOn.remove(a.getAgName());
+					 		perceptFin.add(new Pair<String,Message>(a.getAgName(),new Message(1,"env",a.getAgName(),msgPred)));
+						}
+						else
+						{
+							System.out.println("Should never happen");
+						}
+						break;
+					}
+				}
 			}
-			while (!perceptAdds.isEmpty())
-			{
-				Pair<String, Predicate> p = perceptAdds.poll();
-				//System.out.println("Adding percept " + p._2.toString() + " to agent " + p._1);
-				addPercept(p._1, p._2);
-			}
-			while (!perceptFin.isEmpty())
-			{
-				Pair<String, Message> p = perceptFin.poll();
-				addMessage(p._1, p._2);
-				System.out.println("Message: " + p._2.toString());
-			}
-			
-			this.notifyListeners();
-		//	currentState = Process.p_updatedPercept;
-		//}
-		//Update GUI
+		}
+		//Do dirt step
+		dirtNum = (++dirtNum) % currentSettings.getDirtInterval();
+		if (dirtNum == 0)
+		{
+			badDirtNum = (++badDirtNum) % currentSettings.getBadDirtInterval();
+			addDirt(badDirtNum == 0);
+		}
+		remainingSteps--;
+		
+		while (!perceptRems.isEmpty())
+		{
+			Pair<String, Predicate> p = perceptRems.poll();
+			//System.out.println("Removing percept " + p._2.toString() + " from agent " + p._1);
+			removePercept(p._1, p._2);
+		}
+		while (!perceptAdds.isEmpty())
+		{
+			Pair<String, Predicate> p = perceptAdds.poll();
+			//System.out.println("Adding percept " + p._2.toString() + " to agent " + p._1);
+			addPercept(p._1, p._2);
+		}
+		while (!perceptFin.isEmpty())
+		{
+			Pair<String, Message> p = perceptFin.poll();
+			addMessage(p._1, p._2);
+			System.out.println("Message: " + p._2.toString());
+		}
+		
+		this.notifyListeners();
 		
 		for (UpdateToWorld u : worldListeners)
 		{
-			u.worldUpdate();
+			u.worldUpdate(remainingSteps, dirtNum, badDirtNum, world, agentLocations, agentColours);
 		}
 	}
 
@@ -1004,29 +816,13 @@ public class CleaningWorld extends DefaultEnvironment implements MCAPLJobber
 		return world[0].length;
 	}
 
-	public WorldCell getCell(int x, int y) 
+	private WorldCell getCell(int x, int y) 
 	{
 		if (y == -1 || x == -1 || x >= world[0].length || y >= world.length)
 		{
 			System.out.println("Out of bounds (" + x + "," + y + ")");
 		}
 		return world[y][x];
-	}
-
-	public Color getAgentColor(AILAgent ag) 
-	{
-		return agentColours.get(ag.getAgName());
-	}
-
-
-	public void setSimulationDelay(int value) 
-	{
-		simulationDelay = value;
-	}
-
-	public int getRemainingSteps() 
-	{
-		return remainingSteps;
 	}
 
 	public void save(String saveDir) 

@@ -10,6 +10,6 @@ cleanRooms[achieve]
 :Plans:
 +!cleanRooms[achieve] : {B cleaning(X)} <-  *finished, remfin, -cleaning(X), -roomToClean(X), addBack(X);
 +!cleanRooms[achieve] : {B walking(X)} <- *finished, remfin, -walking(X);
-+!cleanRooms[achieve] : {B roomToClean(X), B zone(X)} <- clean(X), +cleaning(X);
-+!cleanRooms[achieve] : {B roomToClean(X)} <- goToZone(X), +walking(X);
-+!cleanRooms[achieve] : {True} <- getRoomToClean(X), +roomToClean(X);
++!cleanRooms[achieve] : {B roomToClean(X), B zone(X)} <- clean(X), +cleaning(X), addFin;
++!cleanRooms[achieve] : {B roomToClean(X)} <- goToZone(X), +walking(X), addFin;
++!cleanRooms[achieve] : {True} <- getRoomToClean(X), +roomToClean(X), addFin;

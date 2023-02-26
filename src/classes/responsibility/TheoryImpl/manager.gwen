@@ -193,42 +193,10 @@ startup[perform]
 +.received(:tell, observed(Zone,_,true,_)) : {True}  <- prt("Bad Dirt ", Zone), +dirt(Zone), +badDirt(Zone), -clear(Zone);
 +.received(:tell, observed(Zone,true,_,_)) : {True}  <- prt("Dirt ", Zone), +dirt(Zone), -badDirt(Zone), -clear(Zone);
 				  
-+.received(:tell, busy(A,true)) : {True} <- -free(A), prt("Busy ",A);
-+.received(:tell, busy(A,false)) : {True} <- +free(A),prt("Free ",A);
++.received(:tell, busy(A,true)) : {True} <- -free(A), prt("Busy ",A), break;
++.received(:tell, busy(A,false)) : {True} <- +free(A),prt("Free ",A), break;
 
 +.received(:tell, A) : {True} <- prt("Received Unknown Message ",A);
-//Update Care Values
-+dirt(a) : {True} <- -care(cleanA,1), +care(cleanA,6), updateCare(cleanA,6);
-+dirt(b) : {True} <- -care(cleanB,1), +care(cleanB,6), updateCare(cleanB,6);
-+dirt(c) : {True} <- -care(cleanC,1), +care(cleanC,6), updateCare(cleanC,6);
-+dirt(d) : {True} <- -care(cleanD,1), +care(cleanD,6), updateCare(cleanD,6);
-+dirt(e) : {True} <- -care(cleanE,1), +care(cleanE,6), updateCare(cleanE,6);
-+dirt(f) : {True} <- -care(cleanF,1), +care(cleanF,6), updateCare(cleanF,6);
-+dirt(g) : {True} <- -care(cleanG,1), +care(cleanG,6), updateCare(cleanG,6);
-+dirt(h) : {True} <- -care(cleanH,1), +care(cleanH,6), updateCare(cleanH,6);
-+dirt(i) : {True} <- -care(cleanI,1), +care(cleanI,6), updateCare(cleanI,6);
-+dirt(j) : {True} <- -care(cleanJ,1), +care(cleanJ,6), updateCare(cleanJ,6);
-+badDirt(a) : {True} <- -care(cleanBadDirtA,2), +care(cleanBadDirtA,7), updateCare(cleanBadDirtA,7);
-+badDirt(b) : {True} <- -care(cleanBadDirtB,2), +care(cleanBadDirtB,7), updateCare(cleanBadDirtB,7);
-+badDirt(c) : {True} <- -care(cleanBadDirtC,2), +care(cleanBadDirtC,7), updateCare(cleanBadDirtC,7);
-+badDirt(d) : {True} <- -care(cleanBadDirtD,2), +care(cleanBadDirtD,7), updateCare(cleanBadDirtD,7);
-+badDirt(e) : {True} <- -care(cleanBadDirtE,2), +care(cleanBadDirtE,7), updateCare(cleanBadDirtE,7);
-+badDirt(f) : {True} <- -care(cleanBadDirtF,2), +care(cleanBadDirtF,7), updateCare(cleanBadDirtF,7);
-+badDirt(g) : {True} <- -care(cleanBadDirtG,2), +care(cleanBadDirtG,7), updateCare(cleanBadDirtG,7);
-+badDirt(h) : {True} <- -care(cleanBadDirtH,2), +care(cleanBadDirtH,7), updateCare(cleanBadDirtH,7);
-+badDirt(i) : {True} <- -care(cleanBadDirtI,2), +care(cleanBadDirtI,7), updateCare(cleanBadDirtI,7);
-+badDirt(j) : {True} <- -care(cleanBadDirtJ,2), +care(cleanBadDirtJ,7), updateCare(cleanBadDirtJ,7);
-+clear(a) : {True} <- +care(cleanA,1), -care(cleanA,6), +care(cleanBadDirtA,2), -care(cleanBadDirtA,7), updateCare(cleanA,1), updateCare(cleanBadDirtA,2);
-+clear(b) : {True} <- +care(cleanB,1), -care(cleanB,6), +care(cleanBadDirtB,2), -care(cleanBadDirtB,7), updateCare(cleanB,1), updateCare(cleanBadDirtB,2);
-+clear(c) : {True} <- +care(cleanC,1), -care(cleanC,6), +care(cleanBadDirtC,2), -care(cleanBadDirtC,7), updateCare(cleanC,1), updateCare(cleanBadDirtC,2);
-+clear(d) : {True} <- +care(cleanD,1), -care(cleanD,6), +care(cleanBadDirtD,2), -care(cleanBadDirtD,7), updateCare(cleanD,1), updateCare(cleanBadDirtD,2);
-+clear(e) : {True} <- +care(cleanE,1), -care(cleanE,6), +care(cleanBadDirtE,2), -care(cleanBadDirtE,7), updateCare(cleanE,1), updateCare(cleanBadDirtE,2);
-+clear(f) : {True} <- +care(cleanF,1), -care(cleanF,6), +care(cleanBadDirtF,2), -care(cleanBadDirtF,7), updateCare(cleanF,1), updateCare(cleanBadDirtF,2);
-+clear(g) : {True} <- +care(cleanG,1), -care(cleanG,6), +care(cleanBadDirtG,2), -care(cleanBadDirtG,7), updateCare(cleanG,1), updateCare(cleanBadDirtG,2);
-+clear(h) : {True} <- +care(cleanH,1), -care(cleanH,6), +care(cleanBadDirtH,2), -care(cleanBadDirtH,7), updateCare(cleanH,1), updateCare(cleanBadDirtH,2);
-+clear(i) : {True} <- +care(cleanI,1), -care(cleanI,6), +care(cleanBadDirtI,2), -care(cleanBadDirtI,7), updateCare(cleanI,1), updateCare(cleanBadDirtI,2);
-+clear(j) : {True} <- +care(cleanJ,1), -care(cleanJ,6), +care(cleanBadDirtJ,2), -care(cleanBadDirtJ,7), updateCare(cleanJ,1), updateCare(cleanBadDirtJ,2);
-
 //Test getting tasks
 //+!test[perform] : {B allTasks([report,cleanA,cleanB,cleanBadDirtC,cleanBadDirtA],Out)} <- prt(Out);
 
@@ -290,7 +258,7 @@ startup[perform]
 
 //Delegate responsibilitiy
 +!delegate(report,Ag)[perform] : {True} <- prt("Delegating Report"), .send(Ag, :tell, assignment(manager,report));
-+!delegate(Res,Ag)[perform] : {True} <- prt("Delegating"), .send(Ag, :tell, assignment(manager,Res)), +prev(Ag), -free(Ag);
++!delegate(Res,Ag)[perform] : {True} <- prt("Delegating"), .send(Ag, :tell, assignment(manager,Res)), +prev(Ag);
 
 +prev(cleaner1) : {True} <- -prev(cleaner2);
 +prev(cleaner2) : {True} <- -prev(cleaner1);
@@ -307,39 +275,39 @@ startup[perform]
 +!action(Res,cleanroomI)[perform] : {B freeAgent(Ag)} <- +!delegate(Res,Ag)[perform], assumeClean("I"), .send(manager,:tell,finished(Res));
 +!action(Res,cleanroomJ)[perform] : {B freeAgent(Ag)} <- +!delegate(Res,Ag)[perform], assumeClean("J"), .send(manager,:tell,finished(Res));
 
-+!action(Res,cleanroomA)[perform] : {B badDirt(a)} <- prt("Belief Bad Dirt"), clearActions, doing(Res), goToZone("A"), clean("A"), assumeClean("A");
-+!action(Res,cleanroomB)[perform] : {B badDirt(b)} <- prt("Belief Bad Dirt"), clearActions, doing(Res), goToZone("B"), clean("B"), assumeClean("B");
-+!action(Res,cleanroomC)[perform] : {B badDirt(c)} <- prt("Belief Bad Dirt"), clearActions, doing(Res), goToZone("C"), clean("C"), assumeClean("C");
-+!action(Res,cleanroomD)[perform] : {B badDirt(d)} <- prt("Belief Bad Dirt"), clearActions, doing(Res), goToZone("D"), clean("D"), assumeClean("D");
-+!action(Res,cleanroomE)[perform] : {B badDirt(e)} <- prt("Belief Bad Dirt"), clearActions, doing(Res), goToZone("E"), clean("E"), assumeClean("E");
-+!action(Res,cleanroomF)[perform] : {B badDirt(f)} <- prt("Belief Bad Dirt"), clearActions, doing(Res), goToZone("F"), clean("F"), assumeClean("F");
-+!action(Res,cleanroomG)[perform] : {B badDirt(g)} <- prt("Belief Bad Dirt"), clearActions, doing(Res), goToZone("G"), clean("G"), assumeClean("G");
-+!action(Res,cleanroomH)[perform] : {B badDirt(h)} <- prt("Belief Bad Dirt"), clearActions, doing(Res), goToZone("H"), clean("H"), assumeClean("H");
-+!action(Res,cleanroomI)[perform] : {B badDirt(i)} <- prt("Belief Bad Dirt"), clearActions, doing(Res), goToZone("I"), clean("I"), assumeClean("I");
-+!action(Res,cleanroomJ)[perform] : {B badDirt(j)} <- prt("Belief Bad Dirt"), clearActions, doing(Res), goToZone("J"), clean("J"), assumeClean("J");
++!action(Res,cleanroomA)[perform] : {B badDirt(a)} <- prt("Clean it myself"), clearActions, doing(Res), goToZone("A"), clean("A"), assumeClean("A"), addFin;
++!action(Res,cleanroomB)[perform] : {B badDirt(b)} <- prt("Clean it myself"), clearActions, doing(Res), goToZone("B"), clean("B"), assumeClean("B"), addFin;
++!action(Res,cleanroomC)[perform] : {B badDirt(c)} <- prt("Clean it myself"), clearActions, doing(Res), goToZone("C"), clean("C"), assumeClean("C"), addFin;
++!action(Res,cleanroomD)[perform] : {B badDirt(d)} <- prt("Clean it myself"), clearActions, doing(Res), goToZone("D"), clean("D"), assumeClean("D"), addFin;
++!action(Res,cleanroomE)[perform] : {B badDirt(e)} <- prt("Clean it myself"), clearActions, doing(Res), goToZone("E"), clean("E"), assumeClean("E"), addFin;
++!action(Res,cleanroomF)[perform] : {B badDirt(f)} <- prt("Clean it myself"), clearActions, doing(Res), goToZone("F"), clean("F"), assumeClean("F"), addFin;
++!action(Res,cleanroomG)[perform] : {B badDirt(g)} <- prt("Clean it myself"), clearActions, doing(Res), goToZone("G"), clean("G"), assumeClean("G"), addFin;
++!action(Res,cleanroomH)[perform] : {B badDirt(h)} <- prt("Clean it myself"), clearActions, doing(Res), goToZone("H"), clean("H"), assumeClean("H"), addFin;
++!action(Res,cleanroomI)[perform] : {B badDirt(i)} <- prt("Clean it myself"), clearActions, doing(Res), goToZone("I"), clean("I"), assumeClean("I"), addFin;
++!action(Res,cleanroomJ)[perform] : {B badDirt(j)} <- prt("Clean it myself"), clearActions, doing(Res), goToZone("J"), clean("J"), assumeClean("J"), addFin;
 
-+!action(Res,cleanroomA)[perform] : {B nextAgent(Ag)} <- +!delegate(Res,Ag)[perform], assumeClean("A"), .send(manager,:tell,finished(Res));
-+!action(Res,cleanroomB)[perform] : {B nextAgent(Ag)} <- +!delegate(Res,Ag)[perform], assumeClean("B"), .send(manager,:tell,finished(Res));
-+!action(Res,cleanroomC)[perform] : {B nextAgent(Ag)} <- +!delegate(Res,Ag)[perform], assumeClean("C"), .send(manager,:tell,finished(Res));
-+!action(Res,cleanroomD)[perform] : {B nextAgent(Ag)} <- +!delegate(Res,Ag)[perform], assumeClean("D"), .send(manager,:tell,finished(Res));
-+!action(Res,cleanroomE)[perform] : {B nextAgent(Ag)} <- +!delegate(Res,Ag)[perform], assumeClean("E"), .send(manager,:tell,finished(Res));
-+!action(Res,cleanroomF)[perform] : {B nextAgent(Ag)} <- +!delegate(Res,Ag)[perform], assumeClean("F"), .send(manager,:tell,finished(Res));
-+!action(Res,cleanroomG)[perform] : {B nextAgent(Ag)} <- +!delegate(Res,Ag)[perform], assumeClean("G"), .send(manager,:tell,finished(Res));
-+!action(Res,cleanroomH)[perform] : {B nextAgent(Ag)} <- +!delegate(Res,Ag)[perform], assumeClean("H"), .send(manager,:tell,finished(Res));
-+!action(Res,cleanroomI)[perform] : {B nextAgent(Ag)} <- +!delegate(Res,Ag)[perform], assumeClean("I"), .send(manager,:tell,finished(Res));
-+!action(Res,cleanroomJ)[perform] : {B nextAgent(Ag)} <- +!delegate(Res,Ag)[perform], assumeClean("J"), .send(manager,:tell,finished(Res));
++!action(Res,cleanroomA)[perform] : {B nextAgent(Ag)} <- prt("next agent"), +!delegate(Res,Ag)[perform], assumeClean("A"), .send(manager,:tell,finished(Res));
++!action(Res,cleanroomB)[perform] : {B nextAgent(Ag)} <- prt("next agent"), +!delegate(Res,Ag)[perform], assumeClean("B"), .send(manager,:tell,finished(Res));
++!action(Res,cleanroomC)[perform] : {B nextAgent(Ag)} <- prt("next agent"), +!delegate(Res,Ag)[perform], assumeClean("C"), .send(manager,:tell,finished(Res));
++!action(Res,cleanroomD)[perform] : {B nextAgent(Ag)} <- prt("next agent"), +!delegate(Res,Ag)[perform], assumeClean("D"), .send(manager,:tell,finished(Res));
++!action(Res,cleanroomE)[perform] : {B nextAgent(Ag)} <- prt("next agent"), +!delegate(Res,Ag)[perform], assumeClean("E"), .send(manager,:tell,finished(Res));
++!action(Res,cleanroomF)[perform] : {B nextAgent(Ag)} <- prt("next agent"), +!delegate(Res,Ag)[perform], assumeClean("F"), .send(manager,:tell,finished(Res));
++!action(Res,cleanroomG)[perform] : {B nextAgent(Ag)} <- prt("next agent"), +!delegate(Res,Ag)[perform], assumeClean("G"), .send(manager,:tell,finished(Res));
++!action(Res,cleanroomH)[perform] : {B nextAgent(Ag)} <- prt("next agent"), +!delegate(Res,Ag)[perform], assumeClean("H"), .send(manager,:tell,finished(Res));
++!action(Res,cleanroomI)[perform] : {B nextAgent(Ag)} <- prt("next agent"), +!delegate(Res,Ag)[perform], assumeClean("I"), .send(manager,:tell,finished(Res));
++!action(Res,cleanroomJ)[perform] : {B nextAgent(Ag)} <- prt("next agent"), +!delegate(Res,Ag)[perform], assumeClean("J"), .send(manager,:tell,finished(Res));
 
 
-+!action(Res,observeA)[perform] : {True} <- clearActions, doing(Res), goToZone("A"), observe("A");
-+!action(Res,observeB)[perform] : {True} <- clearActions, doing(Res), goToZone("B"), observe("B");
-+!action(Res,observeC)[perform] : {True} <- clearActions, doing(Res), goToZone("C"), observe("C");
-+!action(Res,observeD)[perform] : {True} <- clearActions, doing(Res), goToZone("D"), observe("D");
-+!action(Res,observeE)[perform] : {True} <- clearActions, doing(Res), goToZone("E"), observe("E");
-+!action(Res,observeF)[perform] : {True} <- clearActions, doing(Res), goToZone("F"), observe("F");
-+!action(Res,observeG)[perform] : {True} <- clearActions, doing(Res), goToZone("G"), observe("G");
-+!action(Res,observeH)[perform] : {True} <- clearActions, doing(Res), goToZone("H"), observe("H");
-+!action(Res,observeI)[perform] : {True} <- clearActions, doing(Res), goToZone("I"), observe("I");
-+!action(Res,observeJ)[perform] : {True} <- clearActions, doing(Res), goToZone("J"), observe("J");
++!action(Res,observeA)[perform] : {True} <- clearActions, doing(Res), goToZone("A"), observe("A"), addFin;
++!action(Res,observeB)[perform] : {True} <- clearActions, doing(Res), goToZone("B"), observe("B"), addFin;
++!action(Res,observeC)[perform] : {True} <- clearActions, doing(Res), goToZone("C"), observe("C"), addFin;
++!action(Res,observeD)[perform] : {True} <- clearActions, doing(Res), goToZone("D"), observe("D"), addFin;
++!action(Res,observeE)[perform] : {True} <- clearActions, doing(Res), goToZone("E"), observe("E"), addFin;
++!action(Res,observeF)[perform] : {True} <- clearActions, doing(Res), goToZone("F"), observe("F"), addFin;
++!action(Res,observeG)[perform] : {True} <- clearActions, doing(Res), goToZone("G"), observe("G"), addFin;
++!action(Res,observeH)[perform] : {True} <- clearActions, doing(Res), goToZone("H"), observe("H"), addFin;
++!action(Res,observeI)[perform] : {True} <- clearActions, doing(Res), goToZone("I"), observe("I"), addFin;
++!action(Res,observeJ)[perform] : {True} <- clearActions, doing(Res), goToZone("J"), observe("J"), addFin;
 
 +!action(Res,ensureLowDirt)[perform] : {True} <- prt("Ensuring Low Dirt");
 +!action(Res,sendStatus)[perform] : {True} <- prt("Sending report to human");
