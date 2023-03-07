@@ -11,6 +11,7 @@ public class Settings implements Serializable
 	int simulationSteps;
 	int dirtInterval;
 	int badDirtInterval;
+	int simulationStepSize = 2000;
 	
 	public Settings(int height, int width, int simSteps, int dirtInt, int badDirtInt, String worldLoc)
 	{

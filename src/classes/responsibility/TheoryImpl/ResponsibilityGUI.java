@@ -45,15 +45,10 @@ public class ResponsibilityGUI {
 
 	private JFrame frmResponsibilityGwen;
 	private CleaningPanel visual = new CleaningPanel();
-	private String saveDir = "";
 	private static CleaningWorld world;
 	private static MCAPLcontroller mccontrol;
 	private static MAS mas;
 	
-	private int simSteps;
-	private int dirtInt;
-	private int badDirtInt;
-	private String worldLoc;
 	
 	/**
 	 * Set up a multi-agent system from a configuration file.
@@ -99,20 +94,18 @@ public class ResponsibilityGUI {
 	 */
 	public static void main(String[] args) 
 	{
-		String ailFile = "/src/classes/responsibility/TheoryImpl/test.ail";
 		String saveLoc = "output/";
 		int simSteps = 10000;
 		int dirtInt = 15; 
 		int badDirtInt = 5;
-		String worldLoc = "/src/classes/responsibility/TheoryImpl/10Rooms.world";
-		
+		String worldLoc = "14Rooms.world";
+		boolean naive = false;
+		int simSpeed = 0;
+		boolean gui = true;
 		for (int i = 0; i < args.length; i++)
 		{
 			switch (args[i].toLowerCase())
 			{
-			case "ailfile":
-				ailFile = args[++i]; 
-				break;
 			case "simsteps":
 				simSteps = Integer.valueOf(args[++i]);
 				break;
@@ -126,11 +119,37 @@ public class ResponsibilityGUI {
 			case "worldlocation":
 				worldLoc = args[++i];
 				break;
+			case "naive":
+				naive = true;
+				break;
+			case "speed":
+				simSpeed = Integer.valueOf(args[++i]);
+				break;
+			case "nogui":
+				gui = false;
+				break;
 			default:
 				System.out.println("Unrecognised argument: " + args[i]);
 			}
 		}
-		world = new CleaningWorld(simSteps, dirtInt, badDirtInt, worldLoc);
+		world = new CleaningWorld(simSteps, dirtInt, badDirtInt, worldLoc, saveLoc, simSpeed);
+		world.setup_agents(naive);
+		
+		if (gui)
+		{
+			EventQueue.invokeLater(new Runnable() 
+			{
+				public void run() {
+					try 
+					{
+						ResponsibilityGUI window = new ResponsibilityGUI();
+						window.frmResponsibilityGwen.setVisible(true);
+					} catch (Exception e) {
+						e.printStackTrace();
+					}
+				}
+			});
+		}
 		GroundPredSets.clear();
 		AILConfig config = new AILConfig(ailFile);
 		AIL.configureLogging(config);
@@ -190,15 +209,19 @@ public class ResponsibilityGUI {
 		visual.setLayout(new GridLayout(world.getHeight(), world.getWidth(), 0, 0));
 		world.addWorldListeners(new UpdateToWorld()
 		{
+
 			@Override
 			public void worldUpdate(int time, int dirt, int badDirt, WorldCell[][] world,
-					HashMap<String, Pair<Integer, Integer>> agentLocations, HashMap<String, Color> agentColours) {
+					HashMap<String, responsibility.TheoryImpl.Pair<Integer, Integer>> agentLocations,
+					HashMap<String, Color> agentColours) {
 				lblSimStep.setText("Steps Remaining: " + time);
 				lblDirt.setText("Dirt: " + dirt + " Bad Dirt: " + badDirt);
 				visual.setWorld(world, agentLocations, agentColours);
+				
 			}
-	
+
 		});
+		
 		
 	}
 

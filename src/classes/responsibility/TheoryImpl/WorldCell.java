@@ -1,34 +1,40 @@
 package responsibility.TheoryImpl;
 
-import java.util.Random;
-
 public class WorldCell
 {
-	private boolean hasDirt;
-	private boolean hasBadDirt;
+	public enum DirtLevel {dl_dirt,dl_badDirt,dl_clear};
+	private DirtLevel dirtLevel = DirtLevel.dl_clear;
 	private boolean traversable;
 	private boolean occupied = false;
 	private char zoneID;
+	private int appeared;
+	private int cleaned;
 
 	public boolean hasDirt() 
 	{
-		return hasDirt;
+		return dirtLevel != DirtLevel.dl_clear;
 	}
 	
 	public boolean hasBadDirt()
 	{
-		return hasBadDirt;
+		return dirtLevel == DirtLevel.dl_badDirt;
 	}
 	
-	public void setDirty(boolean bad)
+	public void setDirty(boolean bad, int time)
 	{
-		hasDirt = true;
-		hasBadDirt = bad;
+		dirtLevel = bad ? DirtLevel.dl_badDirt : DirtLevel.dl_dirt;
+		appeared = time;
 	}
 	
-	public void clean()
+	public void clean(int time)
 	{
-		hasDirt = false;
+		dirtLevel = DirtLevel.dl_clear;
+		cleaned = time;
+	}
+
+	public int timeAlive()
+	{
+		return appeared - cleaned;
 	}
 
 	public boolean isOccupied() {

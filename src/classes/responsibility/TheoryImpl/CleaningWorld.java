@@ -1,32 +1,17 @@
 package responsibility.TheoryImpl;
 
 import java.awt.Color;
-import java.io.BufferedReader;
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.FileNotFoundException;
-import java.io.FileReader;
-import java.io.IOException;
-import java.io.ObjectInputStream;
 import java.io.RandomAccessFile;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
-import java.util.Deque;
 import java.util.HashMap;
-import java.util.Iterator;
 import java.util.List;
 import java.util.ArrayDeque;
 import java.util.Random;
-import java.util.Stack;
 import java.util.Timer;
-import java.util.TimerTask;
 import java.util.TreeSet;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ConcurrentLinkedQueue;
-
 import ail.mas.DefaultEnvironment;
-import ail.mas.scheduling.ActionScheduler;
 import ail.mas.scheduling.RoundRobinScheduler;
 import ail.semantics.AILAgent;
 import ail.syntax.Action;
@@ -35,7 +20,6 @@ import ail.syntax.ListTermImpl;
 import ail.syntax.Literal;
 import ail.syntax.Message;
 import ail.syntax.NumberTerm;
-import ail.syntax.NumberTermImpl;
 import ail.syntax.Predicate;
 import ail.syntax.StringTerm;
 import ail.syntax.StringTermImpl;
@@ -43,7 +27,6 @@ import ail.syntax.Term;
 import ail.syntax.Unifier;
 import ail.util.AILexception;
 import ajpf.MCAPLJobber;
-import gov.nasa.jpf.util.Pair;
 
 interface UpdateToWorld{
 	void worldUpdate(int time, int dirt, int badDirt, WorldCell[][] world, HashMap<String, Pair<Integer,Integer>> agentLocations, HashMap<String, Color> agentColours);
@@ -51,33 +34,32 @@ interface UpdateToWorld{
 
 public class CleaningWorld extends DefaultEnvironment implements MCAPLJobber
 {
-	public enum AgentAction {aa_moveup, aa_movedown, aa_moveright, aa_moveleft, aa_clean, aa_observedirt, aa_moveupleft, aa_moveupright, aa_movedownleft, aa_movedownright, aa_finish}
-	//public enum Process {p_nochanges, p_updatedPercept, p_updatePercept};
-	//private volatile Process currentState = Process.p_nochanges;
+	public enum AgentAction {aa_moveup, aa_movedown, aa_moveright, aa_moveleft, aa_clean, aa_observedirt, aa_moveupleft, aa_moveupright, aa_movedownleft, aa_movedownright, aa_finish, aa_none}
 	Routes routeToZones = new Routes();
 	WorldCell[][] world;
-	int remainingSteps = 1;
-	Timer environmentTimer = new Timer();
+	int remainingSteps = 100;
+	int totalTime = 100;
+	int simSpeed = 350;
 	Settings currentSettings;
-	RoundRobinScheduler rrs = new RoundRobinScheduler();
+	String saveLocation;
+	ArrayDeque<Message> msgs = new ArrayDeque<Message>();
 	ArrayList<UpdateToWorld> worldListeners = new ArrayList<UpdateToWorld>();
+	ArrayList<String> agents = new ArrayList<String>();
 	HashMap<String, Color> agentColours = new HashMap<String, Color>();
 	HashMap<Character, ArrayList<Pair<Integer, Integer>>> zoneSquares = new HashMap<Character, ArrayList<Pair<Integer, Integer>>>();
 	
-	HashMap<String, ArrayDeque<AgentAction>> agentActions = new HashMap<String, ArrayDeque<AgentAction>>();
 	HashMap<String, Pair<Integer,Integer>> agentLocations = new HashMap<String, Pair<Integer,Integer>>();
+	HashMap<String, ArrayDeque<AgentAction>> agentActions = new HashMap<String, ArrayDeque<AgentAction>>();
 	HashMap<String, String> workingOn = new HashMap<String, String>();
 	HashMap<String, HashMap<String, Integer>> agentCares = new HashMap<String, HashMap<String,Integer>>();
 	
-	ArrayDeque<Pair<String, Predicate>> perceptAdds = new ArrayDeque<Pair<String, Predicate>>();
-	ArrayDeque<Pair<String, Predicate>> perceptRems = new ArrayDeque<Pair<String, Predicate>>();
-	ArrayDeque<Pair<String, Message>> perceptFin = new ArrayDeque<Pair<String,Message>>();
-	
 	Random r = new Random();
-	
+	private HashMap<String, Integer> cleanCountdown = new HashMap<String, Integer>();
+	private Integer cleanLength = 30;
 	//Variables for naive cleaner
 	ArrayDeque<Character> naiveQueue = new ArrayDeque<Character>();
-	
+	boolean naive;
+
 	//variables for dirt management
 	int dirtNum = 0;
 	int badDirtNum = 0;
@@ -85,6 +67,9 @@ public class CleaningWorld extends DefaultEnvironment implements MCAPLJobber
 	int totalBadDirt = 0;
 	ArrayList<Pair<Integer,Integer>> possibleDirtLocations = new ArrayList<Pair<Integer,Integer>>();
 	DirtRecord dirtRecord = new DirtRecord();
+	
+	int envCount = 0;
+	int gwenTime = 2000;
 
 	public Settings getSettings()
 	{
@@ -122,13 +107,13 @@ public class CleaningWorld extends DefaultEnvironment implements MCAPLJobber
 		
 	}
 	
-	public void addDirt(boolean bad) 
+	public void addDirt(boolean bad, int time) 
 	{
 		if (possibleDirtLocations.size() > 0)
 		{
 			Collections.shuffle(possibleDirtLocations);//to ensure that dirt is not evenly distributed as it is cleaned.
 			Pair<Integer,Integer> newDirt = possibleDirtLocations.remove(0);
-			getCell(newDirt._1,newDirt._2).setDirty(bad);
+			getCell(newDirt.getFirst(),newDirt.getSecond()).setDirty(bad, time);
 			totalDirt++;
 			if (bad) {totalBadDirt++;}
 			dirtRecord.addRecord(remainingSteps, totalDirt, totalBadDirt);
@@ -140,9 +125,12 @@ public class CleaningWorld extends DefaultEnvironment implements MCAPLJobber
 		return agentLocations.get(agName);
 	}
 
-	public CleaningWorld(int simSteps, int dirtInt, int badDirtInt, String worldLoc)
+	public CleaningWorld(int simSteps, int dirtInt, int badDirtInt, String worldLoc, String saveLoc, int _simSpeed)
 	{
 		currentSettings = new Settings(0, 0, simSteps, dirtInt, badDirtInt, worldLoc);
+		simSpeed = _simSpeed;
+		totalTime = simSteps;
+		saveLocation = saveLoc;
 		try
 		{
 			zoneSquares.clear();
@@ -186,8 +174,6 @@ public class CleaningWorld extends DefaultEnvironment implements MCAPLJobber
 				naiveQueue.add(zoneID);
 			}
 			naiveQueue.remove('0');//Remove wall room
-			setup_scheduler(this, rrs);
-			rrs.addJobber(this);
 		}
 		catch (Exception ex)
 		{
@@ -606,7 +592,7 @@ public class CleaningWorld extends DefaultEnvironment implements MCAPLJobber
 	{
 		//Get zone for agent
 		Pair<Integer,Integer> l = agentLocations.get(agName);
-		char zone = getCell(l._1,l._2).getZoneID();
+		char zone = getCell(l.getFirst(),l.getSecond()).getZoneID();
 		boolean hasDirt = false;
 		boolean hasBadDirt = false;
 		boolean isClear = false;
@@ -663,20 +649,22 @@ public class CleaningWorld extends DefaultEnvironment implements MCAPLJobber
 		agentActions.get(agName).addAll(moveActions);
 	}
 
-	private void clean(int x, int y) 
+	private void clean(int x, int y, int time) 
 	{
 		if (getCell(x,y).hasDirt())
 		{
+			boolean badDirt = false;
 			if (getCell(x,y).hasBadDirt())
 			{
 				totalBadDirt--;
+				badDirt = true;
 			}
 			totalDirt--;
 			possibleDirtLocations.add(new Pair<Integer,Integer>(x,y));
 			dirtRecord.addRecord(remainingSteps, totalDirt, totalBadDirt);
+			getCell(x, y).clean(time);
+			dirtRecord.addTimeRecord(badDirt, getCell(x, y).timeAlive());
 		}
-		getCell(x, y).clean();
-		
 	}
 	
 	//Change environment percepts
@@ -694,104 +682,136 @@ public class CleaningWorld extends DefaultEnvironment implements MCAPLJobber
 	@Override
 	public void do_job() 
 	{
-		try {
-			Thread.sleep(10);
-		} catch (InterruptedException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		}
-		for (AILAgent a : getAgents())
+		if (envCount >= gwenTime)
 		{
-			ArrayDeque<AgentAction> actionStack = agentActions.get(a.getAgName());
-			if (!actionStack.isEmpty())
+			envCount = -1;
+			for (AILAgent a : getAgents())
 			{
-				AgentAction action = actionStack.pop();
-				Pair<Integer, Integer> agentLocation = getAgentLocation(a.getAgName());
-				if (agentLocation._1 != -1)
+				ArrayDeque<AgentAction> actionStack = agentActions.get(a.getAgName());
+				if (!actionStack.isEmpty())
 				{
-					switch (action)
+					AgentAction action = actionStack.pop();
+					Pair<Integer, Integer> agentLocation = getAgentLocation(a.getAgName());
+					if (agentLocation.getFirst() != -1)
 					{
-					case aa_clean:
-						clean(agentLocation._1, agentLocation._2); 
-						break;
-					case aa_movedown:
-						moveAgent(a.getAgName(), agentLocation._1, agentLocation._2 + 1);
-						break;
-					case aa_moveleft:
-						moveAgent(a.getAgName(), agentLocation._1 - 1, agentLocation._2);
-						break;
-					case aa_moveright:
-						moveAgent(a.getAgName(), agentLocation._1 + 1, agentLocation._2);
-						break;
-					case aa_moveup:
-						moveAgent(a.getAgName(), agentLocation._1, agentLocation._2 - 1);
-						break;
-					case aa_movedownleft:
-						moveAgent(a.getAgName(), agentLocation._1 - 1, agentLocation._2 + 1);
-						break;
-					case aa_movedownright:
-						moveAgent(a.getAgName(), agentLocation._1 + 1, agentLocation._2 + 1);
-						break;
-					case aa_moveupleft:
-						moveAgent(a.getAgName(), agentLocation._1 - 1, agentLocation._2 - 1);
-						break;
-					case aa_moveupright:
-						moveAgent(a.getAgName(), agentLocation._1 + 1, agentLocation._2 - 1);
-						break;
-					case aa_observedirt:
-						observeDirt(a.getAgName());
-						break;
-					case aa_finish:
-						perceptAdds.add(new Pair<String, Predicate>(a.getAgName(), new Predicate("finished")));
-						Predicate msgPred = new Predicate("finished");
-						if (workingOn.containsKey(a.getAgName()))
+						switch (action)
 						{
-							msgPred.addTerm(new Predicate(workingOn.get(a.getAgName())));
-							workingOn.remove(a.getAgName());
-					 		perceptFin.add(new Pair<String,Message>(a.getAgName(),new Message(1,"env",a.getAgName(),msgPred)));
+						case aa_clean:
+							if (cleanCountdown.containsKey(a) && cleanCountdown.get(a) == 0)
+							{
+								clean(agentLocation.getFirst(), agentLocation.getSecond(),remainingSteps); 
+								cleanCountdown.remove(a);
+							}
+							else if (cleanCountdown.containsKey(a))
+							{
+								cleanCountdown.put(a.getAgName(),cleanCountdown.get(a) - 1);
+							}
+							else
+							{
+								cleanCountdown.put(a.getAgName(),cleanLength);
+							}
+							break;
+						case aa_movedown:
+							moveAgent(a.getAgName(), agentLocation.getFirst(), agentLocation.getSecond() + 1);
+							break;
+						case aa_moveleft:
+							moveAgent(a.getAgName(), agentLocation.getFirst() - 1, agentLocation.getSecond());
+							break;
+						case aa_moveright:
+							moveAgent(a.getAgName(), agentLocation.getFirst() + 1, agentLocation.getSecond());
+							break;
+						case aa_moveup:
+							moveAgent(a.getAgName(), agentLocation.getFirst(), agentLocation.getSecond() - 1);
+							break;
+						case aa_movedownleft:
+							moveAgent(a.getAgName(), agentLocation.getFirst() - 1, agentLocation.getSecond() + 1);
+							break;
+						case aa_movedownright:
+							moveAgent(a.getAgName(), agentLocation.getFirst() + 1, agentLocation.getSecond() + 1);
+							break;
+						case aa_moveupleft:
+							moveAgent(a.getAgName(), agentLocation.getFirst() - 1, agentLocation.getSecond() - 1);
+							break;
+						case aa_moveupright:
+							moveAgent(a.getAgName(), agentLocation.getFirst() + 1, agentLocation.getSecond() - 1);
+							break;
+						case aa_observedirt:
+							observeDirt(a.getAgName());
+							break;
+						case aa_finish:
+							perceptAdds.add(new Pair<String, Predicate>(a.getAgName(), new Predicate("finished")));
+							Predicate msgPred = new Predicate("finished");
+							if (workingOn.containsKey(a.getAgName()))
+							{
+								msgPred.addTerm(new Predicate(workingOn.get(a.getAgName())));
+								workingOn.remove(a.getAgName());
+						 		perceptFin.add(new Pair<String,Message>(a.getAgName(),new Message(1,"env",a.getAgName(),msgPred)));
+							}
+							else
+							{
+								System.out.println("Should never happen");
+							}
+							break;
 						}
-						else
-						{
-							System.out.println("Should never happen");
-						}
-						break;
 					}
 				}
 			}
+			
+			//Do dirt step
+			dirtNum = (++dirtNum) % currentSettings.getDirtInterval();
+			if (dirtNum == 0)
+			{
+				badDirtNum = (++badDirtNum) % currentSettings.getBadDirtInterval();
+				if (badDirtNum != 0)
+				{
+					addDirt(false,remainingSteps);addDirt(false,remainingSteps);addDirt(false,remainingSteps);addDirt(false,remainingSteps);addDirt(false,remainingSteps);
+				}
+				else
+				{
+					addDirt(true,remainingSteps);addDirt(true,remainingSteps);addDirt(true,remainingSteps);
+				}
+			}
+			remainingSteps--;
+			try {
+				Thread.sleep(200);
+			} catch (InterruptedException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			}
 		}
 		//Do dirt step
-		dirtNum = (++dirtNum) % currentSettings.getDirtInterval();
-		if (dirtNum == 0)
-		{
-			badDirtNum = (++badDirtNum) % currentSettings.getBadDirtInterval();
-			addDirt(badDirtNum == 0);
-		}
-		remainingSteps--;
+		envCount++;
 		
 		while (!perceptRems.isEmpty())
 		{
 			Pair<String, Predicate> p = perceptRems.poll();
-			//System.out.println("Removing percept " + p._2.toString() + " from agent " + p._1);
-			removePercept(p._1, p._2);
+			//System.out.println("Removing percept " + p.getSecond().toString() + " from agent " + p.getFirst());
+			removePercept(p.getFirst(), p.getSecond());
 		}
 		while (!perceptAdds.isEmpty())
 		{
 			Pair<String, Predicate> p = perceptAdds.poll();
-			//System.out.println("Adding percept " + p._2.toString() + " to agent " + p._1);
-			addPercept(p._1, p._2);
+			//System.out.println("Adding percept " + p.getSecond().toString() + " to agent " + p.getFirst());
+			addPercept(p.getFirst(), p.getSecond());
 		}
 		while (!perceptFin.isEmpty())
 		{
 			Pair<String, Message> p = perceptFin.poll();
-			addMessage(p._1, p._2);
-			System.out.println("Message: " + p._2.toString());
+			addMessage(p.getFirst(), p.getSecond());
+			System.out.println("Message: " + p.getSecond().toString());
 		}
 		
 		this.notifyListeners();
 		
 		for (UpdateToWorld u : worldListeners)
 		{
-			u.worldUpdate(remainingSteps, dirtNum, badDirtNum, world, agentLocations, agentColours);
+			u.worldUpdate(remainingSteps, totalDirt, totalBadDirt, world, agentLocations, agentColours);
+		}
+		
+		if (remainingSteps <= 0)
+		{
+			save();
+			System.exit(0);
 		}
 	}
 
@@ -825,8 +845,8 @@ public class CleaningWorld extends DefaultEnvironment implements MCAPLJobber
 		return world[y][x];
 	}
 
-	public void save(String saveDir) 
+	public void save() 
 	{
-		dirtRecord.saveToFile(saveDir);
+		dirtRecord.saveToFile(saveLocation,totalTime);
 	}
 }
