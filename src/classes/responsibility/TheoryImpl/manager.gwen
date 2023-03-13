@@ -286,17 +286,27 @@ startup[perform]
 +!action(Res,cleanroomI)[perform] : {B badDirt(i)} <- prt("Clean it myself"), clearActions, doing(Res), goToZone("I"), clean("I"), assumeClean("I"), addFin;
 +!action(Res,cleanroomJ)[perform] : {B badDirt(j)} <- prt("Clean it myself"), clearActions, doing(Res), goToZone("J"), clean("J"), assumeClean("J"), addFin;
 
-+!action(Res,cleanroomA)[perform] : {B nextAgent(Ag)} <- prt("next agent"), +!delegate(Res,Ag)[perform], assumeClean("A"), .send(manager,:tell,finished(Res));
-+!action(Res,cleanroomB)[perform] : {B nextAgent(Ag)} <- prt("next agent"), +!delegate(Res,Ag)[perform], assumeClean("B"), .send(manager,:tell,finished(Res));
-+!action(Res,cleanroomC)[perform] : {B nextAgent(Ag)} <- prt("next agent"), +!delegate(Res,Ag)[perform], assumeClean("C"), .send(manager,:tell,finished(Res));
-+!action(Res,cleanroomD)[perform] : {B nextAgent(Ag)} <- prt("next agent"), +!delegate(Res,Ag)[perform], assumeClean("D"), .send(manager,:tell,finished(Res));
-+!action(Res,cleanroomE)[perform] : {B nextAgent(Ag)} <- prt("next agent"), +!delegate(Res,Ag)[perform], assumeClean("E"), .send(manager,:tell,finished(Res));
-+!action(Res,cleanroomF)[perform] : {B nextAgent(Ag)} <- prt("next agent"), +!delegate(Res,Ag)[perform], assumeClean("F"), .send(manager,:tell,finished(Res));
-+!action(Res,cleanroomG)[perform] : {B nextAgent(Ag)} <- prt("next agent"), +!delegate(Res,Ag)[perform], assumeClean("G"), .send(manager,:tell,finished(Res));
-+!action(Res,cleanroomH)[perform] : {B nextAgent(Ag)} <- prt("next agent"), +!delegate(Res,Ag)[perform], assumeClean("H"), .send(manager,:tell,finished(Res));
-+!action(Res,cleanroomI)[perform] : {B nextAgent(Ag)} <- prt("next agent"), +!delegate(Res,Ag)[perform], assumeClean("I"), .send(manager,:tell,finished(Res));
-+!action(Res,cleanroomJ)[perform] : {B nextAgent(Ag)} <- prt("next agent"), +!delegate(Res,Ag)[perform], assumeClean("J"), .send(manager,:tell,finished(Res));
++!action(Res,cleanroomA)[perform] : {B nextAgent(Ag), ~B delegated(Res,_)} <- prt("next agent"), +!delegate(Res,Ag)[perform], assumeClean("A"), .send(manager,:tell,finished(Res));
++!action(Res,cleanroomB)[perform] : {B nextAgent(Ag), ~B delegated(Res,_)} <- prt("next agent"), +!delegate(Res,Ag)[perform], assumeClean("B"), .send(manager,:tell,finished(Res));
++!action(Res,cleanroomC)[perform] : {B nextAgent(Ag), ~B delegated(Res,_)} <- prt("next agent"), +!delegate(Res,Ag)[perform], assumeClean("C"), .send(manager,:tell,finished(Res));
++!action(Res,cleanroomD)[perform] : {B nextAgent(Ag), ~B delegated(Res,_)} <- prt("next agent"), +!delegate(Res,Ag)[perform], assumeClean("D"), .send(manager,:tell,finished(Res));
++!action(Res,cleanroomE)[perform] : {B nextAgent(Ag), ~B delegated(Res,_)} <- prt("next agent"), +!delegate(Res,Ag)[perform], assumeClean("E"), .send(manager,:tell,finished(Res));
++!action(Res,cleanroomF)[perform] : {B nextAgent(Ag), ~B delegated(Res,_)} <- prt("next agent"), +!delegate(Res,Ag)[perform], assumeClean("F"), .send(manager,:tell,finished(Res));
++!action(Res,cleanroomG)[perform] : {B nextAgent(Ag), ~B delegated(Res,_)} <- prt("next agent"), +!delegate(Res,Ag)[perform], assumeClean("G"), .send(manager,:tell,finished(Res));
++!action(Res,cleanroomH)[perform] : {B nextAgent(Ag), ~B delegated(Res,_)} <- prt("next agent"), +!delegate(Res,Ag)[perform], assumeClean("H"), .send(manager,:tell,finished(Res));
++!action(Res,cleanroomI)[perform] : {B nextAgent(Ag), ~B delegated(Res,_)} <- prt("next agent"), +!delegate(Res,Ag)[perform], assumeClean("I"), .send(manager,:tell,finished(Res));
++!action(Res,cleanroomJ)[perform] : {B nextAgent(Ag), ~B delegated(Res,_)} <- prt("next agent"), +!delegate(Res,Ag)[perform], assumeClean("J"), .send(manager,:tell,finished(Res));
 
++!action(Res,cleanroomA)[perform] : {True} <- prt("Already delegated"), +!delegate(Res,Ag)[perform], assumeClean("A"), .send(manager,:tell,finished(Res));
++!action(Res,cleanroomB)[perform] : {True} <- prt("Already delegated"), +!delegate(Res,Ag)[perform], assumeClean("B"), .send(manager,:tell,finished(Res));
++!action(Res,cleanroomC)[perform] : {True} <- prt("Already delegated"), +!delegate(Res,Ag)[perform], assumeClean("C"), .send(manager,:tell,finished(Res));
++!action(Res,cleanroomD)[perform] : {True} <- prt("Already delegated"), +!delegate(Res,Ag)[perform], assumeClean("D"), .send(manager,:tell,finished(Res));
++!action(Res,cleanroomE)[perform] : {True} <- prt("Already delegated"), +!delegate(Res,Ag)[perform], assumeClean("E"), .send(manager,:tell,finished(Res));
++!action(Res,cleanroomF)[perform] : {True} <- prt("Already delegated"), +!delegate(Res,Ag)[perform], assumeClean("F"), .send(manager,:tell,finished(Res));
++!action(Res,cleanroomG)[perform] : {True} <- prt("Already delegated"), +!delegate(Res,Ag)[perform], assumeClean("G"), .send(manager,:tell,finished(Res));
++!action(Res,cleanroomH)[perform] : {True} <- prt("Already delegated"), +!delegate(Res,Ag)[perform], assumeClean("H"), .send(manager,:tell,finished(Res));
++!action(Res,cleanroomI)[perform] : {True} <- prt("Already delegated"), +!delegate(Res,Ag)[perform], assumeClean("I"), .send(manager,:tell,finished(Res));
++!action(Res,cleanroomJ)[perform] : {True} <- prt("Already delegated"), +!delegate(Res,Ag)[perform], assumeClean("J"), .send(manager,:tell,finished(Res));
 
 +!action(Res,observeA)[perform] : {True} <- clearActions, doing(Res), goToZone("A"), observe("A"), addFin;
 +!action(Res,observeB)[perform] : {True} <- clearActions, doing(Res), goToZone("B"), observe("B"), addFin;
