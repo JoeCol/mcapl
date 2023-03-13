@@ -4,7 +4,6 @@ import java.util.HashMap;
 import java.awt.Graphics;
 import java.awt.Color;
 import javax.swing.JPanel;
-import gov.nasa.jpf.util.Pair;
 
 public class CleaningPanel extends JPanel
 {
@@ -64,8 +63,8 @@ public class CleaningPanel extends JPanel
 			for (String ag : locations.keySet())
 			{
 				Pair<Integer, Integer> l = locations.get(ag);
-				int x = l._1;
-				int y = l._2;
+				int x = l.getFirst();
+				int y = l.getSecond();
 				int tx = 1+(x * widthOfCell);
 				int ty = g.getFontMetrics().getHeight() + (y * heightOfCell);
 				g.setColor(colours.get(ag));

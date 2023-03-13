@@ -1,17 +1,15 @@
 package responsibility.TheoryImpl;
 
-import java.awt.EventQueue;
-
-import javax.swing.JFrame;
-import javax.swing.JMenuBar;
-import javax.swing.JMenu;
-import javax.swing.JMenuItem;
-import javax.swing.JPanel;
 import java.awt.BorderLayout;
 import java.awt.Color;
-
-import javax.swing.JButton;
+import java.awt.EventQueue;
 import java.awt.FlowLayout;
+import java.awt.GridLayout;
+import java.util.HashMap;
+
+import javax.swing.JFrame;
+import javax.swing.JLabel;
+import javax.swing.JPanel;
 import javax.swing.border.BevelBorder;
 
 import ail.mas.AIL;
@@ -21,25 +19,6 @@ import ail.syntax.ast.GroundPredSets;
 import ail.util.AILConfig;
 import ajpf.MCAPLcontroller;
 import ajpf.util.AJPFLogger;
-import gov.nasa.jpf.util.Pair;
-
-import java.awt.event.ActionListener;
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.FileNotFoundException;
-import java.io.FileOutputStream;
-import java.io.IOException;
-import java.io.ObjectInputStream;
-import java.io.ObjectOutputStream;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.awt.event.ActionEvent;
-import javax.swing.JLabel;
-import java.awt.GridLayout;
-import javax.swing.JSlider;
-import javax.swing.event.ChangeListener;
-import javax.swing.event.ChangeEvent;
-import javax.swing.JTabbedPane;
 
 public class ResponsibilityGUI {
 
@@ -99,9 +78,10 @@ public class ResponsibilityGUI {
 		int dirtInt = 15; 
 		int badDirtInt = 5;
 		String worldLoc = "14Rooms.world";
-		boolean naive = false;
 		int simSpeed = 0;
 		boolean gui = true;
+		String ailFile = "/responsibility.ail";
+		
 		for (int i = 0; i < args.length; i++)
 		{
 			switch (args[i].toLowerCase())
@@ -119,22 +99,21 @@ public class ResponsibilityGUI {
 			case "worldlocation":
 				worldLoc = args[++i];
 				break;
-			case "naive":
-				naive = true;
-				break;
-			case "speed":
+			case "delay":
 				simSpeed = Integer.valueOf(args[++i]);
 				break;
 			case "nogui":
 				gui = false;
 				break;
+			case "ailfile":
+				ailFile = args[++i];
+				break;
 			default:
 				System.out.println("Unrecognised argument: " + args[i]);
 			}
 		}
-		world = new CleaningWorld(simSteps, dirtInt, badDirtInt, worldLoc, saveLoc, simSpeed);
-		world.setup_agents(naive);
 		
+		world = new CleaningWorld(simSteps, dirtInt, badDirtInt, worldLoc, saveLoc, simSpeed);
 		if (gui)
 		{
 			EventQueue.invokeLater(new Runnable() 
@@ -160,19 +139,6 @@ public class ResponsibilityGUI {
 		// Create the initial state of the multi-agent program.
 		mas = AILSetup(config, mccontrol);
 		//System.out.println(mccontrol.getScheduler().toString());
-		
-		EventQueue.invokeLater(new Runnable() 
-		{
-			public void run() {
-				try 
-				{
-					ResponsibilityGUI window = new ResponsibilityGUI();
-					window.frmResponsibilityGwen.setVisible(true);
-				} catch (Exception e) {
-					e.printStackTrace();
-				}
-			}
-		});
 		
 		mccontrol.begin();
 	}
@@ -212,7 +178,7 @@ public class ResponsibilityGUI {
 
 			@Override
 			public void worldUpdate(int time, int dirt, int badDirt, WorldCell[][] world,
-					HashMap<String, responsibility.TheoryImpl.Pair<Integer, Integer>> agentLocations,
+					HashMap<String, Pair<Integer, Integer>> agentLocations,
 					HashMap<String, Color> agentColours) {
 				lblSimStep.setText("Steps Remaining: " + time);
 				lblDirt.setText("Dirt: " + dirt + " Bad Dirt: " + badDirt);

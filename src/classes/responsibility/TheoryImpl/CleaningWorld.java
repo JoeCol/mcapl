@@ -34,6 +34,7 @@ interface UpdateToWorld{
 
 public class CleaningWorld extends DefaultEnvironment implements MCAPLJobber
 {
+	RoundRobinScheduler rrs = new RoundRobinScheduler();
 	public enum AgentAction {aa_moveup, aa_movedown, aa_moveright, aa_moveleft, aa_clean, aa_observedirt, aa_moveupleft, aa_moveupright, aa_movedownleft, aa_movedownright, aa_finish, aa_none}
 	Routes routeToZones = new Routes();
 	WorldCell[][] world;
@@ -42,7 +43,9 @@ public class CleaningWorld extends DefaultEnvironment implements MCAPLJobber
 	int simSpeed = 350;
 	Settings currentSettings;
 	String saveLocation;
-	ArrayDeque<Message> msgs = new ArrayDeque<Message>();
+	ArrayDeque<Pair<String, Predicate>> perceptAdds = new ArrayDeque<Pair<String, Predicate>>();
+	ArrayDeque<Pair<String, Predicate>> perceptRems = new ArrayDeque<Pair<String, Predicate>>();
+	ArrayDeque<Pair<String, Message>> perceptFin = new ArrayDeque<Pair<String, Message>>();
 	ArrayList<UpdateToWorld> worldListeners = new ArrayList<UpdateToWorld>();
 	ArrayList<String> agents = new ArrayList<String>();
 	HashMap<String, Color> agentColours = new HashMap<String, Color>();
@@ -52,6 +55,7 @@ public class CleaningWorld extends DefaultEnvironment implements MCAPLJobber
 	HashMap<String, ArrayDeque<AgentAction>> agentActions = new HashMap<String, ArrayDeque<AgentAction>>();
 	HashMap<String, String> workingOn = new HashMap<String, String>();
 	HashMap<String, HashMap<String, Integer>> agentCares = new HashMap<String, HashMap<String,Integer>>();
+	
 	
 	Random r = new Random();
 	private HashMap<String, Integer> cleanCountdown = new HashMap<String, Integer>();
@@ -105,6 +109,10 @@ public class CleaningWorld extends DefaultEnvironment implements MCAPLJobber
 			agentCares.put(a.getAgName(), care);
 		}
 		
+		for (UpdateToWorld u : worldListeners)
+		{
+			u.worldUpdate(remainingSteps, totalDirt, totalBadDirt, world, agentLocations, agentColours);
+		}
 	}
 	
 	public void addDirt(boolean bad, int time) 
@@ -179,6 +187,9 @@ public class CleaningWorld extends DefaultEnvironment implements MCAPLJobber
 		{
 			ex.printStackTrace();
 		}
+		
+		setup_scheduler(this, rrs);
+		rrs.addJobber(this);
 	}
 	
 	public Unifier executeAction(String agName, Action act) throws AILexception {
@@ -697,14 +708,14 @@ public class CleaningWorld extends DefaultEnvironment implements MCAPLJobber
 						switch (action)
 						{
 						case aa_clean:
-							if (cleanCountdown.containsKey(a) && cleanCountdown.get(a) == 0)
+							if (cleanCountdown.containsKey(a.getAgName()) && cleanCountdown.get(a.getAgName()) == 0)
 							{
 								clean(agentLocation.getFirst(), agentLocation.getSecond(),remainingSteps); 
-								cleanCountdown.remove(a);
+								cleanCountdown.remove(a.getAgName());
 							}
-							else if (cleanCountdown.containsKey(a))
+							else if (cleanCountdown.containsKey(a.getAgName()))
 							{
-								cleanCountdown.put(a.getAgName(),cleanCountdown.get(a) - 1);
+								cleanCountdown.put(a.getAgName(),cleanCountdown.get(a.getAgName()) - 1);
 							}
 							else
 							{
@@ -752,6 +763,10 @@ public class CleaningWorld extends DefaultEnvironment implements MCAPLJobber
 								System.out.println("Should never happen");
 							}
 							break;
+						case aa_none:
+							break;
+						default:
+							break;
 						}
 					}
 				}
@@ -772,11 +787,14 @@ public class CleaningWorld extends DefaultEnvironment implements MCAPLJobber
 				}
 			}
 			remainingSteps--;
-			try {
-				Thread.sleep(200);
-			} catch (InterruptedException e) {
-				// TODO Auto-generated catch block
-				e.printStackTrace();
+			if (simSpeed > 0)
+			{
+				try {
+					Thread.sleep(simSpeed);
+				} catch (InterruptedException e) {
+					// TODO Auto-generated catch block
+					e.printStackTrace();
+				}
 			}
 		}
 		//Do dirt step
