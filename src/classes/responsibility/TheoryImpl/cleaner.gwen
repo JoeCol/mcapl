@@ -229,9 +229,9 @@ processLoop[achieve]
 +!delegate(Res,Ags)[perform] : {True} <- prt("Delegating ", Res, " to ", Ags), .send(Ags, :tell, assignment(cleaner,Res)), *sentRes(Res,Ags), -sentRes(Res,Ags), prt("Sent and received");
 
 //Report back
-+!reportSuccess(Res)[perform] : {B assignment(Assignee,Res,cleaner)} <- .send(Assignee, :tell, finished(Res));
++!reportSuccess(Res)[perform] : {B assignment(Assignee,Res,cleaner)} <- .send(Assignee, :tell, finished(Res,Ag));
 +!reportSuccess(Res)[perform] : {True} <- prt("No assignee found");
-+!reportFailure(Res)[perform] : {B assignment(Assignee,Res,cleaner)} <- .send(Assignee, :tell, failed(Res));
++!reportFailure(Res)[perform] : {B assignment(Assignee,Res,cleaner)} <- .send(Assignee, :tell, failed(Res,Ag));
 +!reportBack(Res)[perform] : {True} <- prt("Reporting back unfinished responsibility ", Res);
 
 //Tell assignee of acceptance

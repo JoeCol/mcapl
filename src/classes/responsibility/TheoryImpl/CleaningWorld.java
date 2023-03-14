@@ -204,7 +204,7 @@ public class CleaningWorld extends DefaultEnvironment implements MCAPLJobber
 	   			break;
 	   		case "assumeClean":
 	   			char zone = act.getTerm(0).toString().charAt(1);
-	   			System.out.println("assuming clean " + zone);
+	   			//System.out.println("assuming clean " + zone);
 	   			Predicate p = new Predicate("observed");
 	   			p.addTerm(new Predicate((zone + "").toLowerCase()));
 	   			p.addTerm(new Predicate("false"));
@@ -607,7 +607,7 @@ public class CleaningWorld extends DefaultEnvironment implements MCAPLJobber
 		boolean hasDirt = false;
 		boolean hasBadDirt = false;
 		boolean isClear = false;
-		System.out.println(zone + " observed");
+		//System.out.println(zone + " observed");
 		for (int i = 0; i < world.length; i++)
 		{
 			WorldCell[] row = world[i];
@@ -620,13 +620,13 @@ public class CleaningWorld extends DefaultEnvironment implements MCAPLJobber
 					{
 						hasDirt = true;
 						hasBadDirt = true;
-						System.out.println(zone + " has bad dirt at " + j + " " + i);
+						//System.out.println(zone + " has bad dirt at " + j + " " + i);
 						break;
 					}
 					else if (cell.hasDirt())
 					{
 						hasDirt = true;
-						System.out.println(zone + " has dirt at " + j + " " + i);
+						//System.out.println(zone + " has dirt at " + j + " " + i);
 					}
 				}
 			}
@@ -701,8 +701,9 @@ public class CleaningWorld extends DefaultEnvironment implements MCAPLJobber
 				ArrayDeque<AgentAction> actionStack = agentActions.get(a.getAgName());
 				if (!actionStack.isEmpty())
 				{
-					AgentAction action = actionStack.pop();
+					AgentAction action = actionStack.peek();
 					Pair<Integer, Integer> agentLocation = getAgentLocation(a.getAgName());
+					boolean finishedAction = true;
 					if (agentLocation.getFirst() != -1)
 					{
 						switch (action)
@@ -716,10 +717,12 @@ public class CleaningWorld extends DefaultEnvironment implements MCAPLJobber
 							else if (cleanCountdown.containsKey(a.getAgName()))
 							{
 								cleanCountdown.put(a.getAgName(),cleanCountdown.get(a.getAgName()) - 1);
+								finishedAction = false;
 							}
 							else
 							{
 								cleanCountdown.put(a.getAgName(),cleanLength);
+								finishedAction = false;
 							}
 							break;
 						case aa_movedown:
@@ -769,6 +772,10 @@ public class CleaningWorld extends DefaultEnvironment implements MCAPLJobber
 							break;
 						}
 					}
+					if (finishedAction)
+					{
+						actionStack.poll();
+					}
 				}
 			}
 			
@@ -816,7 +823,7 @@ public class CleaningWorld extends DefaultEnvironment implements MCAPLJobber
 		{
 			Pair<String, Message> p = perceptFin.poll();
 			addMessage(p.getFirst(), p.getSecond());
-			System.out.println("Message: " + p.getSecond().toString());
+			//System.out.println("Message: " + p.getSecond().toString());
 		}
 		
 		this.notifyListeners();
