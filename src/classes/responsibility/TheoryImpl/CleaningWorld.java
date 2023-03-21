@@ -58,22 +58,24 @@ public class CleaningWorld extends DefaultEnvironment implements MCAPLJobber
 	
 	
 	Random r = new Random();
+	Random dirtR = new Random();
+	Random badDirtR = new Random();
 	private HashMap<String, Integer> cleanCountdown = new HashMap<String, Integer>();
-	private Integer cleanLength = 30;
+	private Integer cleanLength = 20;
 	//Variables for naive cleaner
 	ArrayDeque<Character> naiveQueue = new ArrayDeque<Character>();
 	boolean naive;
 
 	//variables for dirt management
-	int dirtNum = 0;
-	int badDirtNum = 0;
+	//int dirtNum = 0;
+	//int badDirtNum = 0;
 	int totalDirt = 0;
 	int totalBadDirt = 0;
 	ArrayList<Pair<Integer,Integer>> possibleDirtLocations = new ArrayList<Pair<Integer,Integer>>();
 	DirtRecord dirtRecord = new DirtRecord();
 	
 	int envCount = 0;
-	int gwenTime = 2000;
+	int gwenTime = 2200;
 
 	public Settings getSettings()
 	{
@@ -780,18 +782,15 @@ public class CleaningWorld extends DefaultEnvironment implements MCAPLJobber
 			}
 			
 			//Do dirt step
-			dirtNum = (++dirtNum) % currentSettings.getDirtInterval();
+			int dirtNum = dirtR.nextInt(currentSettings.getDirtInterval());
+			int badDirtNum = badDirtR.nextInt(currentSettings.getBadDirtInterval());
 			if (dirtNum == 0)
 			{
-				badDirtNum = (++badDirtNum) % currentSettings.getBadDirtInterval();
-				if (badDirtNum != 0)
-				{
-					addDirt(false,remainingSteps);addDirt(false,remainingSteps);addDirt(false,remainingSteps);addDirt(false,remainingSteps);addDirt(false,remainingSteps);
-				}
-				else
-				{
-					addDirt(true,remainingSteps);addDirt(true,remainingSteps);addDirt(true,remainingSteps);
-				}
+				addDirt(false,remainingSteps);
+			}
+			if (badDirtNum == 0)
+			{
+				addDirt(true,remainingSteps);
 			}
 			remainingSteps--;
 			if (simSpeed > 0)

@@ -14,6 +14,11 @@ task(cleanroomG, [cleanroomG], [])
 task(cleanroomH, [cleanroomH], [])
 task(cleanroomI, [cleanroomI], [])
 task(cleanroomJ, [cleanroomJ], [])
+task(cleanroomK, [cleanroomK], [])
+task(cleanroomL, [cleanroomL], [])
+task(cleanroomM, [cleanroomM], [])
+task(cleanroomN, [cleanroomN], [])
+task(cleanroomO, [cleanroomO], [])
 
 task(sendStatus, [sendStatus], [])
  
@@ -30,6 +35,11 @@ res(cleanG, [], cleanroomG, [], oneshot)
 res(cleanH, [], cleanroomH, [], oneshot)
 res(cleanI, [], cleanroomI, [], oneshot)
 res(cleanJ, [], cleanroomJ, [], oneshot)
+res(cleanK, [], cleanroomK, [], oneshot)
+res(cleanL, [], cleanroomL, [], oneshot)
+res(cleanM, [], cleanroomM, [], oneshot)
+res(cleanN, [], cleanroomN, [], oneshot)
+res(cleanO, [], cleanroomO, [], oneshot)
 
 res(cleanBadDirtA, [], cleanroomA, [], oneshot)
 res(cleanBadDirtB, [], cleanroomB, [], oneshot)
@@ -41,6 +51,12 @@ res(cleanBadDirtG, [], cleanroomG, [], oneshot)
 res(cleanBadDirtH, [], cleanroomH, [], oneshot)
 res(cleanBadDirtI, [], cleanroomI, [], oneshot)
 res(cleanBadDirtJ, [], cleanroomJ, [], oneshot)
+res(cleanBadDirtK, [], cleanroomK, [], oneshot)
+res(cleanBadDirtL, [], cleanroomL, [], oneshot)
+res(cleanBadDirtM, [], cleanroomM, [], oneshot)
+res(cleanBadDirtN, [], cleanroomN, [], oneshot)
+res(cleanBadDirtO, [], cleanroomO, [], oneshot)
+
 
 //care values
 care(cleanA,1)
@@ -63,6 +79,16 @@ care(cleanI,1)
 care(cleanBadDirtI,10)
 care(cleanJ,1)
 care(cleanBadDirtJ,10)
+care(cleanK,1)
+care(cleanBadDirtK,10)
+care(cleanL,1)
+care(cleanBadDirtL,10)
+care(cleanM,1)
+care(cleanBadDirtM,10)
+care(cleanN,1)
+care(cleanBadDirtN,10)
+care(cleanO,1)
+care(cleanBadDirtO,10)
 
 care(report,0)
 
@@ -87,13 +113,24 @@ capacity(cleanI)
 capacity(cleanBadDirtI)
 capacity(cleanJ)
 capacity(cleanBadDirtJ)
+capacity(cleanK)
+capacity(cleanBadDirtK)
+capacity(cleanL)
+capacity(cleanBadDirtL)
+capacity(cleanM)
+capacity(cleanBadDirtM)
+capacity(cleanN)
+capacity(cleanBadDirtN)
+capacity(cleanO)
+capacity(cleanBadDirtO)
 
 capacity(report)
 
 //Current Responsibilities
 responsibilities([])
 
-sfree
+lastSent(free)
+
 :Reasoning Rules:
 allTasks([],[]);
 allTasks([H|T], [Tasks|OtherTasks]) :- res(H, _, Name, _, _), task(Name,[Tasks],_), allTasks(T,OtherTasks);
@@ -174,10 +211,9 @@ preRes[achieve]
 +.received(:tell, X) : {True} <- prt(X), printstate, break;
 
 //Specific Actions & states
-+!sendReport[perform] : {~B free, B sfree} <- getName(Name), prt("sending ", Name, " busy"), -sfree, .send(manager,:tell, busy(Name,true)), .send(Name,:tell,finished(report));
-+!sendReport[perform] : {~B free, ~B sfree} <- prt("last sent im busy"), .send(Name,:tell,finished(report));
-+!sendReport[perform] : {B free, ~B sfree} <- getName(Name),prt("sending ", Name, " free"), +sfree, .send(manager,:tell, busy(Name,false)), .send(Name,:tell,finished(report));
-+!sendReport[perform] : {B free, B sfree, B responsibilities(X)} <- prt("last sent im free ", X);
++!sendReport[perform] : {B lastSent(busy), B free, B responsibilities(X)} <- getName(Name), prt("sending ", Name, " free ", X), -lastSent(busy), +lastSent(free), .send(manager,:tell, busy(Name,false)), .send(Name,:tell,finished(report));
++!sendReport[perform] : {B lastSent(free), ~B free, B responsibilities(X)} <- getName(Name), prt("sending ", Name, " busy ", X), -lastSent(free), +lastSent(busy), .send(manager,:tell, busy(Name,true)), .send(Name,:tell,finished(report));
++!sendReport[perform] : {B lastSent(X)} <- prt("Last sent ", X); //.send(Name,:tell,finished(report))
 
 +!action(Res,sendStatus)[perform] : {True} <- prt("Send Report to Manager ", B), +!sendReport[perform];
 +!action(Res,cleanroomA)[perform] : {~B wrking(Res)} <- +wrking(Res), clearActions, doing(Res), goToZone("A"), clean("A"), addFin;
@@ -190,6 +226,11 @@ preRes[achieve]
 +!action(Res,cleanroomH)[perform] : {~B wrking(Res)} <- +wrking(Res), clearActions, doing(Res), goToZone("H"), clean("H"), addFin;
 +!action(Res,cleanroomI)[perform] : {~B wrking(Res)} <- +wrking(Res), clearActions, doing(Res), goToZone("I"), clean("I"), addFin;
 +!action(Res,cleanroomJ)[perform] : {~B wrking(Res)} <- +wrking(Res), clearActions, doing(Res), goToZone("J"), clean("J"), addFin;
++!action(Res,cleanroomK)[perform] : {~B wrking(Res)} <- +wrking(Res), clearActions, doing(Res), goToZone("K"), clean("K"), addFin;
++!action(Res,cleanroomL)[perform] : {~B wrking(Res)} <- +wrking(Res), clearActions, doing(Res), goToZone("L"), clean("L"), addFin;
++!action(Res,cleanroomM)[perform] : {~B wrking(Res)} <- +wrking(Res), clearActions, doing(Res), goToZone("M"), clean("M"), addFin;
++!action(Res,cleanroomN)[perform] : {~B wrking(Res)} <- +wrking(Res), clearActions, doing(Res), goToZone("N"), clean("N"), addFin;
++!action(Res,cleanroomO)[perform] : {~B wrking(Res)} <- +wrking(Res), clearActions, doing(Res), goToZone("O"), clean("O"), addFin;
 +!action(Res,_)[perform] : {B wrking(Res)} <- prt("Already working on ", Res);
 +!action(Res,AnyAction)[perform] : {True} <- prt("Action ", AnyAction, " not recognised for Res ", Res);
 

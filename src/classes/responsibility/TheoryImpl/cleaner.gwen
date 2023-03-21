@@ -3,251 +3,78 @@ GWENDOLEN
 :name: cleaner
 
 :Initial Beliefs:
-//Possible Tasks task(name, [goals/actions], [statesOfTheWorld])
-task(cleanroomA, [cleanroomA], [])
-task(cleanroomB, [cleanroomB], [])
-task(cleanroomC, [cleanroomC], [])
-task(cleanroomD, [cleanroomD], [])
-task(cleanroomE, [cleanroomE], [])
-task(cleanroomF, [cleanroomF], [])
-task(cleanroomG, [cleanroomG], [])
-task(cleanroomH, [cleanroomH], [])
-task(cleanroomI, [cleanroomI], [])
-task(cleanroomJ, [cleanroomJ], [])
 
-task(sendStatus, [sendStatus], [])
- 
-//Possible Responsibilities res(name, [subres], task, [failres], {oneshot,repeat})
-res(report, [], sendStatus, [], repeat)
+res(reportHuman, [], sendToHuman, [], oneshot)
 
-res(cleanA, [], cleanroomA, [], oneshot)
-res(cleanB, [], cleanroomB, [], oneshot)
-res(cleanC, [], cleanroomC, [], oneshot)
-res(cleanD, [], cleanroomD, [], oneshot)
-res(cleanE, [], cleanroomE, [], oneshot)
-res(cleanF, [], cleanroomF, [], oneshot)
-res(cleanG, [], cleanroomG, [], oneshot)
-res(cleanH, [], cleanroomH, [], oneshot)
-res(cleanI, [], cleanroomI, [], oneshot)
-res(cleanJ, [], cleanroomJ, [], oneshot)
+res(cleanA, [], cleanroomA, [], repeat)
+res(cleanB, [], cleanroomB, [], repeat)
+res(cleanC, [], cleanroomC, [], repeat)
+res(cleanD, [], cleanroomD, [], repeat)
+res(cleanE, [], cleanroomE, [], repeat)
+res(cleanF, [], cleanroomF, [], repeat)
+res(cleanG, [], cleanroomG, [], repeat)
+res(cleanH, [], cleanroomH, [], repeat)
+res(cleanI, [], cleanroomI, [], repeat)
+res(cleanJ, [], cleanroomJ, [], repeat)
 
-res(cleanBadDirtA, [], cleanroomA, [], oneshot)
-res(cleanBadDirtB, [], cleanroomB, [], oneshot)
-res(cleanBadDirtC, [], cleanroomC, [], oneshot)
-res(cleanBadDirtD, [], cleanroomD, [], oneshot)
-res(cleanBadDirtE, [], cleanroomE, [], oneshot)
-res(cleanBadDirtF, [], cleanroomF, [], oneshot)
-res(cleanBadDirtG, [], cleanroomG, [], oneshot)
-res(cleanBadDirtH, [], cleanroomH, [], oneshot)
-res(cleanBadDirtI, [], cleanroomI, [], oneshot)
-res(cleanBadDirtJ, [], cleanroomJ, [], oneshot)
+res(observeA, [], observeA, [], repeat)
+res(observeB, [], observeB, [], repeat)
+res(observeC, [], observeC, [], repeat)
+res(observeD, [], observeD, [], repeat)
+res(observeE, [], observeE, [], repeat)
+res(observeF, [], observeF, [], repeat)
+res(observeG, [], observeG, [], repeat)
+res(observeH, [], observeH, [], repeat)
+res(observeI, [], observeI, [], repeat)
+res(observeJ, [], observeJ, [], repeat)
 
-//care values
-care(cleanroomA,1)
-care(cleanBadDirtA,10)
-care(cleanroomB,1)
-care(cleanBadDirtB,10)
-care(cleanroomC,1)
-care(cleanBadDirtC,10)
-care(cleanroomD,1)
-care(cleanBadDirtD,10)
-care(cleanroomE,1)
-care(cleanBadDirtE,10)
-care(cleanroomF,1)
-care(cleanBadDirtF,10)
-care(cleanroomG,1)
-care(cleanBadDirtG,10)
-care(cleanroomH,1)
-care(cleanBadDirtH,10)
-care(cleanroomI,1)
-care(cleanBadDirtI,10)
-care(cleanroomJ,1)
-care(cleanBadDirtJ,10)
+res(cleanBadDirtA, [], cleanroomA, [], repeat)
+res(cleanBadDirtB, [], cleanroomB, [], repeat)
+res(cleanBadDirtC, [], cleanroomC, [], repeat)
+res(cleanBadDirtD, [], cleanroomD, [], repeat)
+res(cleanBadDirtE, [], cleanroomE, [], repeat)
+res(cleanBadDirtF, [], cleanroomF, [], repeat)
+res(cleanBadDirtG, [], cleanroomG, [], repeat)
+res(cleanBadDirtH, [], cleanroomH, [], repeat)
+res(cleanBadDirtI, [], cleanroomI, [], repeat)
+res(cleanBadDirtJ, [], cleanroomJ, [], repeat)
 
-care(report,100)
-
-//Capacity - In essence pre-computed
-capacity(cleanA)
-capacity(cleanBadDirtA)
-capacity(cleanB)
-capacity(cleanBadDirtB)
-capacity(cleanC)
-capacity(cleanBadDirtC)
-capacity(cleanD)
-capacity(cleanBadDirtD)
-capacity(cleanE)
-capacity(cleanBadDirtE)
-capacity(cleanF)
-capacity(cleanBadDirtF)
-capacity(cleanG)
-capacity(cleanBadDirtG)
-capacity(cleanH)
-capacity(cleanBadDirtH)
-capacity(cleanI)
-capacity(cleanBadDirtI)
-capacity(cleanJ)
-capacity(cleanBadDirtJ)
-
-capacity(report)
+res(janitorial,[safety,cleanliness],none,[],repeat)
+res(safety,[cleanBadDirtA,cleanBadDirtB,cleanBadDirtC,cleanBadDirtD,cleanBadDirtE,cleanBadDirtF,cleanBadDirtG,cleanBadDirtH,cleanBadDirtI,cleanBadDirtJ],checkDirtLevel,[reportHuman],repeat)
+res(cleanliness,[observe,clean],none,[],repeat)
+res(observe,[observeA,observeB,observeC,observeD,observeE,observeF,observeG,observeH,observeI,observeJ],none,[],repeat)
+res(clean,[cleanA,cleanB,cleanC,cleanD,cleanE,cleanF,cleanG,cleanH,cleanI,cleanJ],none,[],repeat)
 
 
-//Current Responsibilities
-currentRes([])
-
-//Current Working Task
-completedActions([])
-completedStates([])
-workedOnRes([])
-
-actionRes([])
-acceptedRes([])
-
-//Process Loops
-process(none,start)//where in process loop
-acceptedStage(none,start)
-actionStage(none,start)
+responsibilities([])
 
 :Reasoning Rules:
 
-mostCared(Z,Z);
-mostCared([H|T], Z) :- 
-
-mostCared(X,Y,Z) :- care(X,X1), care(Y,Y1), X1<Y1, Z=Y;
-mostCared(X,Y,Z) :- care(X,X1), care(Y,Y1), Y1<X1, Z=Z;
 
 :Initial Goals:
-processLoop[achieve]
+go[perform]
 
 
 :Plans: 
-//action loop
-+!actionLoop[achieve] : {B actionStage(none,start), B actionRes(Res)} <- getFromList(Res,R), updateStage(action,R,doAction));
-+!actionLoop[achieve] : {B actionStage(R,doAction)} <- prt("do action");
-+!actionLoop[achieve] : {B actionStage(R,checkDone)} <- prt("check done");
-+!actionLoop[achieve] : {B actionStage(R,failed)} <- prt("Res failed");
-+!actionLoop[achieve] : {B actionStage(R,success)} <- prt("Res has successed");
 
-//accepted loop
-+!acceptedLoop[achieve] : {B acceptedStage(none,start), B acceptedRes(Res)} <- getFromList(Res,R), updateStage(accepted,R,check);
-+!acceptedLoop[achieve] : {B acceptedStage(R,check)} <- prt("Check if availiable");
-+!acceptedLoop[achieve] : {B acceptedStage(R,free)} <- prt("free to add to action");
-+!acceptedLoop[achieve] : {B acceptedStage(R,blocked)} <- prt("Blocked from action");
-+!acceptedLoop[achieve] : {B acceptedStage(R,replace)} <- prt("Replace with higher priority res"); 
++!go[perform] : {True} <- +!processRes(initial,[janitorial])[perform];
 
++!action(Res,A)[perform] : {True} <- prt("Doing ", A);
 
-//Specific Actions
-+!action(sendStatus)[perform] : {~B doingAction} <- +doingAction, prt("Send Report to Manager");
-+!action(cleanroomF)[perform] : {~B doingAction} <- +doingAction, goToZone("F"), clean("F");
-+!action(AnyAction)[perform] : {B doingAction} <- prt("Action not finished");
-+!action(AnyAction)[perform] : {True} <- prt("Action ", anyAction, " not recognised");
++!addRes(Res)[perform] : {B responsibilities(L)} <- +.lock, -responsibilities(L), appendList([Res],L,Out), +responsibilities(Out), -.lock;
++!remRes(Res)[perform] : {B responsibilities(L)} <- +.lock, -responsibilities(L), deleteItem(Res,L,Out), +responsibilities(Out), -.lock;
 
-//Update process
-+!updateProcess(Res,State)[perform] : {B process(PRes, PState)} <- -process(PRes, PState), +process(Res, State);
-//Reset completed actions and states
-+!resetWorkedOn[perform] : {B workedOnRes(X)} <- -workedOnRes(X), +workedOnRes([]);
-+!resetCompleted[perform] : {B completedActions(X), B completedStates(Y)} <- -completedActions(X), -completedStates(Y), +completedActions([]), +completedStates([]); 
+//Add new responsibility
++!incomingRes(Assignee,[Res])[perform] : {True} <- prt("Accepting ", Res), +.lock, +assignment(Assignee,Res), +!addRes(Res)[perform], +!reportOutcome(yes,Assignee,Res)[perform], -.lock;
 
-//Manage which responsibilities have been worked on
-+!checkWorkedDone(Res,true)[perform] : {True} <- prt("Worked on all Res"), +!resetWorkedOn[perform], +!resetCompleted[perform], +!updateProcess(none,start)[perform];
-+!checkWorkedDone(Res,false)[perform] : {True} <- +!updateProcess(none,start)[perform];
-+!checkWorkedOnFull(Res)[perform] : {B workedOnRes(WorkedOn), B currentRes(ResList)} <- doneAll(ResList,WorkedOn,Arg), +!checkWorkedDone(Res,Arg)[perform];
-+!addToWorkedOn(Res)[perform] : {B workedOnRes(WorkedOn), B currentRes(ResList)} <- prt("Add worked on ", WorkedOn, " plus ", Res), -workedOnRes(WorkedOn), appendList(WorkedOn,[Res],Out), +workedOnRes(Out), doneAll(ResList,Out,Arg), +!checkWorkedDone(Res,Arg)[perform];
++!processRes(Assignee,[])[perform] : {B responsibilities(H)} <- prt("Processed Res have ", H);
++!processRes(Assignee,[Res])[perform] : {B res(Res,[],_,_,_)} <- +!incomingRes(Assignee,[Res])[perform];
++!processRes(Assignee,[Res|T])[perform] : {B res(Res,SubRes,_,_,_)} <- +!incomingRes(Assignee,[Res])[perform], +!processRes(Assignee,T)[perform], +!processRes(Assignee,SubRes)[perform];
 
-//Responsibility has succeeded
-+!processSuccess(Res)[perform] : {B res(Res,_,_,_,oneshot)} <- prt("Process Success of ", Res), -success(Res), +!reportSuccess(Res)[perform], +!rem([Res])[perform], +!checkWorkedOnFull(Res)[perform];
-+!processSuccess(Res)[perform] : {B res(Res,_,_,_,repeat)} <- prt("Process Success of ", Res), -success(Res), +!reportSuccess(Res)[perform], +!addToWorkedOn(Res)[perform];
-
-//Responsibility has failed - no fail res, with fail res
-+!processFailure(Res)[perform] : {B res(Res,_,_,[],_)} <- -failed(Res), +!rem([Res])[perform], +!reportFailure(Res)[perform], prt("Process Failure");
-+!processFailure(Res)[perform] : {B res(Res,_,_,FailRes,_)} <- -failed(Res), +!rem([Res])[perform], +!reportFailure(Res)[perform], +!incomingRes(cleaner,FailRes)[perform], prt("Process Failure with FailRes");
-
-//Check if sub responsibilities have succeeded, then add success if all true. Success should only be checked when all tasks have completed and not failed
-+!checkIndividualSuccess(Res,[])[perform] : {True} <- +success(Res), +!updateProcess(Res,success)[perform];
-+!checkIndividualSuccess(Res,[SubRes|T])[perform] : {~B success(SubRes)} <- +!addToWorkedOn(Res)[perform];//Done all actions but sub responsibility not finished
-+!checkIndividualSuccess(Res,[SubRes|T])[perform] : {B success(SubRes)} <- +!checkIndividualSuccess(Res,T)[perform];
-+!checkSuccess(Res)[perform] : {B res(Res,SubRes,_,_,_)} <- +!checkIndividualSuccess(Res,SubRes)[perform];
-
-//Check if sub responsibilities have failed
-+!checkIndividualFailure(Res,[])[perform] : {True} <- prt("All checked no failures"), +!updateProcess(Res,checkSuccess)[perform];
-+!checkIndividualFailure(Res,[SubRes|T])[perform] : {~B failed(SubRes)} <- prt(SubRes, " Failed Not Failed. Checking ", T), +!checkIndividualFailure(Res,T)[perform];
-+!checkIndividualFailure(Res,[SubRes|T])[perform] : {B failed(SubRes)} <- prt(SubRes, " Failed Sub Res"), +failed(Res), +!updateProcess(Res,failure)[perform];
-+!checkFailedSubRes(Res)[perform] : {B res(Res,SubRes,_,_,_)} <- prt(Res, " Checking Failure Sub Res"), +!checkIndividualFailure(Res,SubRes)[perform];
-
-//Check if responsibility has failed (raised by environment)
-+!checkFailed(Res)[perform] : {B failed(Res)} <- prt(Res, " Failed"), +!updateProcess(Res,failure)[perform];
-+!checkFailed(Res)[perform] : {~B failed(Res)} <- prt(Res, " Not failed"), +!updateProcess(Res,checkFSubRes)[perform];
-
-//Work on One State
-+!checkSDone(State,true)[perform] : {B completedStates(DoneStates)} <- -completedStates(DoneStates), appendList([State],DoneStates,Out), +completedStates(Out);
-+!checkSDone(State,false)[perform] : {True} <- -actionState(State);
-+!workOnStates(Task)[perform] : {B actionState(none), B process(Res,A)} <- -actionState(none), +!updateProcess(Res,checkFailure)[perform];
-+!workOnStates(Task)[perform] : {B actionState(State)} <- do(State,Done), -actionState(State), +!checkSDone(State,Done)[perform];
-+!workOnStates(Task)[perform] : {B task(Task,_,States), B completedStates(DoneStates)} <- getNextInList(States,DoneStates,State), +actionState(State), +!workOnStates(Task)[perform];
-
-//Work on one action
-+!checkADone(Action,true)[perform] : {B completedActions(DoneActions)} <- prt("Action finished"), -doingAction, -completedActions(DoneActions), appendList([Action],DoneActions,Out), +completedActions(Out);
-+!checkADone(Action,false)[perform] : {True} <- prt("Action not finished");
-+!workOnActions(Task)[perform] : {B actionState(none), B process(Res,A)} <- prt("No action to do for ", Res, " ", A), -actionState(none), +!updateProcess(Res,states)[perform];
-+!workOnActions(Task)[perform] : {B actionState(Action)} <- prt("Doing action ", Action), +.lock, +!action(Action)[perform], -.lock, getDone(Done), -actionState(Action), +!checkADone(Action,Done)[perform];
-+!workOnActions(Task)[perform] : {B task(Task,Actions,_), B completedActions(DoneActions)} <- prt("Getting action"), getNextInList(Actions,DoneActions,Action), +actionState(Action), +!workOnActions(Task)[perform];
-
-//New responsibility has been added
-+!processLoop[achieve] : {~B ready} <- prt("Waiting for decision on incoming"), *ready, prt("Started processing again"), +!processLoop[achieve];
-//New responsibility added, reset to check if new responsibility is higher priority
-+!processLoop[achieve] : {B newRes} <- prt("New Res"), +!updateProcess(none,start)[perform], -newRes; 
-//Get the most cared about responsibility
-+!processLoop[achieve] : {B process(none,start), B currentRes(ResList), B workedOnRes(WorkedOn)} <- getCared(ResList, Res, WorkedOn), prt(ResList, " Got Responsibility ", Res, " worked on", WorkedOn), +!updateProcess(Res,checkDelegate)[perform];
-
-//Check if need to delegate, first already delegated, second not delegated, third not needed to delegate
-+!processLoop[achieve] : {B process(Res,checkDelegate), B delegate(Res,Ags), B delegated(Res,Ags)} <- prt(Res," already delegated"), +!updateProcess(Res,checkFailure)[perform];
-+!processLoop[achieve] : {B process(Res,checkDelegate), B delegate(Res,Ags), ~B waiting(Res,Ags)} <- prt("Delegating ", Res), +!delegate(Res,Ags)[perform];
-+!processLoop[achieve] : {B process(Res,checkDelegate), B delegate(Res,Ags), B waiting(Res,Ags)} <- prt("Waiting for reply ", Res, " from ", Ags),  +!updateProcess(Res,checkFailure)[perform];
-+!processLoop[achieve] : {B process(Res,checkDelegate)} <- prt("Not delegating ", Res), +!updateProcess(Res,actions)[perform];
-
-///Do an action from the Task associated with the Responsibility 
-+!processLoop[achieve] : {B process(Res,actions), B res(Res,_,Task,_,_)} <- prt("Working on Actions ", Res), +!workOnActions(Task)[perform];
-+!processLoop[achieve] : {B process(Res,states), B res(Res,_,Task,_,_)} <- prt("Working on States ", Res), +!workOnStates(Task)[perform];
-+!processLoop[achieve] : {B process(Res,checkFailure)} <- prt("Checking failure ", Res), +!checkFailed(Res)[perform];
-+!processLoop[achieve] : {B process(Res,checkFSubRes)} <- prt("Checking sub res failure ", Res), +!checkFailedSubRes(Res)[perform];
-+!processLoop[achieve] : {B process(Res,checkSuccess)} <- prt("Checking Success ", Res), +!checkSuccess(Res)[perform];
-+!processLoop[achieve] : {B process(Res,failure)} <- prt("Failed ", Res), +!processFailure(Res)[perform];
-+!processLoop[achieve] : {B process(Res,success)} <- prt("Success ", Res), +!processSuccess(Res)[perform];
-+!processLoop[achieve] : {B process(Res,Section)} <- prt("Process failed at ", Res, " _ ",  Section), +processLoop;
-+!processLoop[achieve] : {True} <- prt("Crash"), printstate, +processLoop;
-
-//Current Responsibility List Management
-+!add(X)[perform] : {B currentRes(Z)} <- +.lock, -currentRes(Z), appendList(X,Z,Y), +currentRes(Y), -.lock;
-+!rem(X)[perform] : {B currentRes(Z)} <- +.lock, -currentRes(Z), removeList(X,Z,Y), +currentRes(Y), prt("Removed ", X, " From ", Z, " Now ", Y), -.lock;
-
-//Received a delegated responsibility Example: assignment([ag1,ag2],safety)
-+.received(:tell, assignment(Assignee,Res)) : {True} <- -ready, +.lock, prt("Received Assignment"), +!incomingRes(Assignee,[Res])[perform], -.lock, +ready;
-//Received confirmation of delegation
-+.received(:tell, accepted(Res,Assignee)) : {True} <- prt("Received ", accepted(Res,Assignee)), -waiting(Res,Assignee), +delegated(Res,Assignee);
-+.received(:tell, X) : {True} <- print(X), printstate, break;
-
-//Delegate a responsibility
-+!delegate(Res,Ags)[perform] : {True} <- prt("Delegating ", Res, " to ", Ags), .send(Ags, :tell, assignment(cleaner,Res)), *sentRes(Res,Ags), -sentRes(Res,Ags), prt("Sent and received");
-
-//Report back
-+!reportSuccess(Res)[perform] : {B assignment(Assignee,Res,cleaner)} <- .send(Assignee, :tell, finished(Res,Ag));
-+!reportSuccess(Res)[perform] : {True} <- prt("No assignee found");
-+!reportFailure(Res)[perform] : {B assignment(Assignee,Res,cleaner)} <- .send(Assignee, :tell, failed(Res,Ag));
-+!reportBack(Res)[perform] : {True} <- prt("Reporting back unfinished responsibility ", Res);
-
-//Tell assignee of acceptance
-+!informAssignment([], Res)[perform] : {True} <- prt("Informed all assignees");
-+!informAssignment([Assignee|T], Res)[perform] : {True} <- prt("Informing acceptance to ", Assignee), .send(Assignee, :tell, accepted(Res, cleaner)), +!informAssignment(T,Res)[perform];
-//Inform assignment single assignee
-+!informAssignment(Assignee, Res)[perform] : {True} <- prt("Informing single acceptance of ", Res, " to ", Assignee), .send(Assignee, :tell, accepted(Res, cleaner));
-
-//Add Accepted Responsibility to list
-+!addAcceptedRes(Assignee, NewRes)[perform] : {B currentRes(Res), B res(NewRes,SubRes,_,_,_)} <- +.lock, prt("Accepting Responsibility ", NewRes), +assignment(Assignee,NewRes,cleaner), +!informAssignment(Assignee,NewRes)[perform], +!add([NewRes])[perform], -.lock;
-
-//Accepting or delegating responsibilities
-+!incomingRes(_, [])[perform] : {True} <- +.lock, prt("Processed all responsibilities"), -.lock;
-//Delegate responsibility
-+!incomingRes(Assignee, [Res|T])[perform] : {B capacity(Res), B delegate(Res,Ags)} <- +.lock, prt("Chose To Delegate ", Res), +!addAcceptedRes(Assignee, Res)[perform], +!incomingRes(Assignee, T)[perform], +!delegate(Res,Ags)[perform], -.lock;
-//Decide if to accept responsibility
-+!incomingRes(Assignee, [Res|T])[perform] : {B capacity(Res), B res(Res,Sub,_,_,_)} <- +.lock, prt("Chose To Accept ", Res), +!addAcceptedRes(Assignee, Res)[perform], +!incomingRes(Assignee, T)[perform], +!incomingRes(Assignee, Sub)[perform], -.lock;
-+!incomingRes(Assignee, [Res|T])[perform] : {~B capacity(Res)} <- +.lock, prt("Chose To Not Accept ", Res), +!incomingRes(Assignee, T)[perform], -.lock; //Should send message back
+//Messages to send back
++!reportOutcome(_, [], Res)[perform] : {True} <- prt("Reported accepted to all");
++!reportOutcome(yes, [Assignee|T], Res)[perform] : {True} <- .send(Assignee, :tell, accepted(Res, cleaner)), +!reportOutcome(yes,T,Res)[perform];
++!reportOutcome(yes, Assignee, Res)[perform] : {True} <- .send(Assignee, :tell, accepted(Res, cleaner));
++!reportOutcome(no, [Assignee|T], Res)[perform] : {True} <- .send(Assignee, :tell, rejected(Res, cleaner)), +!reportOutcome(yes,T,Res)[perform];
++!reportOutcome(no, Assignee, Res)[perform] : {True} <- .send(Assignee, :tell, rejected(Res, cleaner));
 

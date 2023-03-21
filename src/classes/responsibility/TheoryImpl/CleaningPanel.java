@@ -56,7 +56,7 @@ public class CleaningPanel extends JPanel
 						g.fillRect(1+(x * widthOfCell), g.getFontMetrics().getHeight() + (y * heightOfCell), widthOfCell, heightOfCell);
 					}
 					g.setColor(Color.black);
-					g.drawString("("+ x + "," + y + ") Zone:" + world[y][x].getZoneID(), 2+(x * widthOfCell), (g.getFontMetrics().getHeight() * 2) + (y * heightOfCell));
+					g.drawString("Room:" + world[y][x].getZoneID(), 2+(x * widthOfCell), (g.getFontMetrics().getHeight() * 2) + (y * heightOfCell));
 				}
 			}
 			
