@@ -173,7 +173,7 @@ preRes[achieve]
 
 //Do responsibility
 +!doRes([])[perform] : {True} <- prt("done all res");
-+!doRes([H|T])[perform] : {B actionReady, B res(H,_,none,_,_)} <- prt("No task with ", H), +!doRes(T)[perform];
++!doRes([H|T])[perform] : {B actionReady, B res(H,_,none,_,_)} <- +!doRes(T)[perform];
 +!doRes([H|T])[perform] : {B actionReady, B res(H,_,TName,_,_), B task(TName,[Task],[State])} <- +!do(H,[Task|State])[perform], +!doRes(T)[perform];
 +!doRes([H|T])[perform] : {B actionReady, B res(H,_,TName,_,_), B task(TName,Task,[])} <- +!do(H,Task)[perform], +!doRes(T)[perform];
 +!doRes([H|T])[perform] : {B actionReady, B res(H,_,TName,_,_), B task(TName,[],State)} <- +!do(H, State)[perform], +!doRes(T)[perform];
@@ -182,7 +182,7 @@ preRes[achieve]
 //Prepare task list
 +!preRes[achieve] : {~B actionReady} <- *actionReady;
 +!preRes[achieve] : {B actionReady, B responsibilities([])} <- -actionReady;
-+!preRes[achieve] : {B actionReady, B responsibilities(Res)} <- prt("Now Ready"), getViable(Res,Viable), prt(Viable), selectCared(Viable,Out), prt(Out), +!doRes(Out)[perform], -actionReady;
++!preRes[achieve] : {B actionReady, B responsibilities(Res)} <- getViable(Res,Viable), selectCared(Viable,Out), +!doRes(Out)[perform], -actionReady;
 
 //Manage lists
 +!addRes(Res)[perform] : {B responsibilities(L)} <- +.lock, -responsibilities(L), addResItem(Res,L,Out), +responsibilities(Out), -.lock;
@@ -204,16 +204,14 @@ preRes[achieve]
 +!reportOutcome(no, Assignee, Res)[perform] : {True} <- .send(Assignee, :tell, rejected(Res, cleaner));
 
 //Received a delegated responsibility Example: assignment([ag1,ag2],safety)
-+.received(:tell, assignment(Assignee,Res)) : {True} <- prt("Received Assignment ", Res), -actionReady, +.lock, +!processRes(Assignee,[Res])[perform], -.lock, +actionReady;
-+.received(:tell, accepted(Res,Assignee)) : {True} <- prt("Received ", accepted(Res,Assignee)), -waiting(Res,Assignee), +delegated(Res,Assignee);
-+.received(:tell, finished(Res)) : {True} <- +.lock, -wrking(Res), prt("Received Finish ", Res), +!finishRes(Res)[perform], -.lock, +actionReady;
++.received(:tell, assignment(Assignee,Res)) : {True} <- -actionReady, +.lock, +!processRes(Assignee,[Res])[perform], -.lock, +actionReady;
++.received(:tell, accepted(Res,Assignee)) : {True} <- -waiting(Res,Assignee), +delegated(Res,Assignee);
++.received(:tell, finished(Res)) : {True} <- +.lock, -wrking(Res), +!finishRes(Res)[perform], -.lock, +actionReady;
 +.received(:tell, failed(Res)) : {True} <- +.lock, +!failedRes(Res)[perform], -.lock, +actionReady;
 +.received(:tell, X) : {True} <- prt(X), printstate, break;
 
 //Specific Actions & states
-+!sendReport[perform] : {B lastSent(busy), B free, B responsibilities(X)} <- getName(Name), prt("sending ", Name, " free ", X), -lastSent(busy), +lastSent(free), .send(manager,:tell, busy(Name,false)), .send(Name,:tell,finished(report));
-+!sendReport[perform] : {B lastSent(free), ~B free, B responsibilities(X)} <- getName(Name), prt("sending ", Name, " busy ", X), -lastSent(free), +lastSent(busy), .send(manager,:tell, busy(Name,true)), .send(Name,:tell,finished(report));
-+!sendReport[perform] : {B lastSent(X)} <- prt("Last sent ", X); //.send(Name,:tell,finished(report))
++!sendReport[perform] : {True} <- getBusy(Busy), getLastSent(Msg), sendIfDifferent(Busy,Msg,manager);
 
 +!action(Res,sendStatus)[perform] : {True} <- prt("Send Report to Manager ", B), +!sendReport[perform];
 +!action(Res,cleanroomA)[perform] : {~B wrking(Res)} <- +wrking(Res), clearActions, doing(Res), goToZone("A"), clean("A"), addFin;

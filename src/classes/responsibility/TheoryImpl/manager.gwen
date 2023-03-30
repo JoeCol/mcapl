@@ -239,8 +239,8 @@ startup[perform]
 +!startup[perform] : {True} <- .send(manager,:tell,assignment(initial,janitorial)), +!delegate(report,cleaner1)[perform], +!delegate(report,cleaner2)[perform], +!preRes[achieve];
 
 //Received a delegated responsibility Example: assignment([ag1,ag2],safety)
-+.received(:tell, assignment(Assignee,Res)) : {True} <- prt("Received Assignment ", Res), -actionReady, +.lock, +!processRes(Assignee,[Res])[perform], -.lock, +actionReady;
-+.received(:tell, accepted(Res,Assignee)) : {True} <- prt("Received ", accepted(Res,Assignee)), -waiting(Res,Assignee), +delegated(Res,Assignee);
++.received(:tell, assignment(Assignee,Res)) : {True} <- -actionReady, +.lock, +!processRes(Assignee,[Res])[perform], -.lock, +actionReady;
++.received(:tell, accepted(Res,Assignee)) : {True} <- -waiting(Res,Assignee), +delegated(Res,Assignee);
 +.received(:tell, finished(Res)) : {True} <- +.lock, +!finishRes(Res)[perform], -.lock, +actionReady;
 +.received(:tell, finished(Res,Ag)) : {True} <- +.lock, +!finishRes(Res)[perform], -delegated(Res,Ag), -.lock, +actionReady;
 +.received(:tell, failed(Res)) : {True} <- +.lock, +!failedRes(Res)[perform], -.lock, +actionReady;
@@ -279,7 +279,7 @@ startup[perform]
 
 //Do responsibility
 +!doRes([])[perform] : {True} <- prt("done all res");
-+!doRes([H|T])[perform] : {B actionReady, B res(H,_,none,_,_)} <- prt("No task with ", H), +!doRes(T)[perform];
++!doRes([H|T])[perform] : {B actionReady, B res(H,_,none,_,_)} <- +!doRes(T)[perform];
 +!doRes([H|T])[perform] : {B actionReady, B res(H,_,TName,_,_), B task(TName,[Task],[State])} <- +!do(H,[Task|State])[perform], +!doRes(T)[perform];
 +!doRes([H|T])[perform] : {B actionReady, B res(H,_,TName,_,_), B task(TName,Task,[])} <- +!do(H,Task)[perform], +!doRes(T)[perform];
 +!doRes([H|T])[perform] : {B actionReady, B res(H,_,TName,_,_), B task(TName,[],State)} <- +!do(H, State)[perform], +!doRes(T)[perform];
@@ -287,8 +287,8 @@ startup[perform]
 
 //Prepare task list
 +!preRes[achieve] : {~B actionReady} <- prt("Waiting"), *actionReady;
-+!preRes[achieve] : {B actionReady, B responsibilities([])} <- prt("No Res to do"), -actionReady;
-+!preRes[achieve] : {B actionReady, B responsibilities(Res)} <- prt("Now Ready"), getViable(Res,Viable), prt(Viable), selectCared(Viable,Out), prt(Out), +!doRes(Out)[perform], -actionReady;
++!preRes[achieve] : {B actionReady, B responsibilities([])} <- -actionReady;
++!preRes[achieve] : {B actionReady, B responsibilities(Res)} <- getViable(Res,Viable), selectCared(Viable,Out), +!doRes(Out)[perform], -actionReady;
 
 //Manage lists
 +!addRes(Res)[perform] : {B responsibilities(L)} <- +.lock, -responsibilities(L), addResItem(Res,L,Out), +responsibilities(Out), -.lock;
@@ -297,8 +297,8 @@ startup[perform]
 +!remWrk(Res)[perform] : {B workingOn(L)} <- +.lock, -workingOn(L), deleteItem(Res,L,Out), +workingOn(Out), -.lock;
 
 //Add new responsibility
-+!incomingRes(Assignee,[Res])[perform] : {B capacity(Res)} <- prt("Accepting ", Res), +.lock, +assignment(Assignee,Res), +!addRes(Res)[perform], +!reportOutcome(yes,Assignee,Res)[perform], -.lock;
-+!incomingRes(Assignee,[Res])[perform] : {~B capacity(Res)} <- prt("Rejecting ", Res), +!reportOutcome(no,Assignee,Res)[perform];
++!incomingRes(Assignee,[Res])[perform] : {B capacity(Res)} <- +.lock, +assignment(Assignee,Res), +!addRes(Res)[perform], +!reportOutcome(yes,Assignee,Res)[perform], -.lock;
++!incomingRes(Assignee,[Res])[perform] : {~B capacity(Res)} <- +!reportOutcome(no,Assignee,Res)[perform];
 
 +!processRes(Assignee,[])[perform] : {B responsibilities(H)} <- prt("Processed Res have ", H);
 +!processRes(Assignee,[Res])[perform] : {B res(Res,[],_,_,_)} <- +!incomingRes(Assignee,[Res])[perform];
@@ -313,7 +313,7 @@ startup[perform]
 +!reportOutcome(no, Assignee, Res)[perform] : {True} <- .send(Assignee, :tell, rejected(Res, cleaner));
 
 //Delegate responsibilitiy
-+!delegate(report,Ag)[perform] : {True} <- prt("Delegating Report"), .send(Ag, :tell, assignment(manager,report));
++!delegate(report,Ag)[perform] : {True} <- .send(Ag, :tell, assignment(manager,report));
 +!delegate(Res,Ag)[perform] : {True} <- prt("Delegating"), .send(Ag, :tell, assignment(manager,Res)), +prev(Ag);
 
 +prev(cleaner1) : {True} <- -prev(cleaner2), prt("Prev changed to c2");

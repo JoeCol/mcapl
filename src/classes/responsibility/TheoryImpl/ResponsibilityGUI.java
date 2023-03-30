@@ -40,7 +40,7 @@ public class ResponsibilityGUI {
 		}
 
 		// First we need to build the multi-agent system
-		MAS mas = AIL.buildMAS(config);
+		mas = AIL.buildMAS(config);
 		mas.setController(control);
 		
 		// Then, if necessary, we attach an environment

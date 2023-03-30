@@ -2,11 +2,7 @@ package responsibility.TheoryImpl;
 
 import java.util.ArrayDeque;
 import java.util.Arrays;
-import java.util.Collection;
 import java.util.HashMap;
-import java.util.Stack;
-
-import responsibility.TheoryImpl.CleaningWorld.AgentAction;
 
 /*
  *  Precalculates best route to zone start

@@ -1,19 +1,9 @@
 package responsibility.BasicResponsibility;
 
-import java.awt.EventQueue;
-
-import javax.swing.JFrame;
-import javax.swing.JMenuBar;
-import javax.swing.JMenu;
-import javax.swing.JMenuItem;
-import javax.swing.JPanel;
 import java.awt.BorderLayout;
-import javax.swing.JButton;
+import java.awt.EventQueue;
 import java.awt.FlowLayout;
-import javax.swing.border.BevelBorder;
-
-import ail.mas.AIL;
-
+import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.io.File;
 import java.io.FileInputStream;
@@ -22,12 +12,18 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
-import java.awt.event.ActionEvent;
+
+import javax.swing.JButton;
+import javax.swing.JFrame;
 import javax.swing.JLabel;
-import java.awt.GridLayout;
+import javax.swing.JMenu;
+import javax.swing.JMenuBar;
+import javax.swing.JMenuItem;
+import javax.swing.JPanel;
 import javax.swing.JSlider;
-import javax.swing.event.ChangeListener;
+import javax.swing.border.BevelBorder;
 import javax.swing.event.ChangeEvent;
+import javax.swing.event.ChangeListener;
 
 public class ResponsibilityGUI {
 

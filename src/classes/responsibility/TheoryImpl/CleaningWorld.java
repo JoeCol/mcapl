@@ -2,15 +2,15 @@ package responsibility.TheoryImpl;
 
 import java.awt.Color;
 import java.io.RandomAccessFile;
+import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
-import java.util.ArrayDeque;
 import java.util.Random;
-import java.util.Timer;
 import java.util.TreeSet;
+
 import ail.mas.DefaultEnvironment;
 import ail.mas.scheduling.RoundRobinScheduler;
 import ail.semantics.AILAgent;
@@ -55,7 +55,7 @@ public class CleaningWorld extends DefaultEnvironment implements MCAPLJobber
 	HashMap<String, ArrayDeque<AgentAction>> agentActions = new HashMap<String, ArrayDeque<AgentAction>>();
 	HashMap<String, String> workingOn = new HashMap<String, String>();
 	HashMap<String, HashMap<String, Integer>> agentCares = new HashMap<String, HashMap<String,Integer>>();
-	
+	HashMap<String, Predicate> lastSent = new HashMap<String, Predicate>();
 	
 	Random r = new Random();
 	Random dirtR = new Random();
@@ -201,6 +201,33 @@ public class CleaningWorld extends DefaultEnvironment implements MCAPLJobber
 	   	ListTerm fullRes;
 	   	switch (act.getFunctor())
 	   	{
+	   		case "getBusy":
+	   			Predicate isBusy = new Predicate("busy");
+	   			isBusy.addTerm(new Predicate(agName));
+	   			if (agentActions.get(agName).size() > 0)
+	   			{
+	   				isBusy.addTerm(new Predicate("true"));
+	   			}
+	   			else
+	   			{
+	   				isBusy.addTerm(new Predicate("false"));
+	   			}
+	   			theta.unifies(act.getTerm(0), isBusy);
+	   			break;
+	   		case "getLastSent":
+	   			Predicate pSent = lastSent.getOrDefault(agName, new Predicate("noneSent"));
+	   			theta.unifies(act.getTerm(0), pSent);
+	   			break;
+	   		case "sendIfDifferent":
+	   			Predicate tosend = (Predicate)act.getTerm(0);
+	   			Predicate laSent = (Predicate)act.getTerm(1);
+	   			Predicate towho = (Predicate)act.getTerm(2);
+	   			if (!tosend.toString().equals(laSent.toString()))
+	   			{
+	   				addMessage(towho.getFunctor(), new Message(1, agName, towho.getFunctor(), tosend));
+	   				lastSent.put(agName, tosend);
+	   			}
+	   			break;
 	   		case "addFin":
 	   			agentActions.get(agName).add(AgentAction.aa_finish);
 	   			break;
